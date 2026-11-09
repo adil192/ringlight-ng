@@ -25,7 +25,7 @@ export function glowWidth(width: number, height: number, size: keyof typeof GLOW
 	return Math.min(width, height) * (GLOW_FRACTION[size] ?? GLOW_FRACTION.medium);
 }
 
-function drawEdges(cr, width, height, r, g, b, alpha, w) {
+function drawEdges(cr: Cairo.Context, width: number, height: number, r: number, g: number, b: number, alpha: number, w) {
 	const band = (x0, y0, x1, y1, rx, ry, rw, rh) => {
 		const grad = new Cairo.LinearGradient(x0, y0, x1, y1);
 		grad.addColorStopRGBA(0.0, r, g, b, alpha);

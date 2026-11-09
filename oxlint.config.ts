@@ -24,12 +24,7 @@ export default defineConfig({
 	],
 	rules: {
 		curly: 'off', // I like single-line if statements
-		'eslint/max-params': [
-			'warn',
-			{
-				max: 4, // increased from 3
-			},
-		],
+		'eslint/max-params': 'off', // Meh
 		'eslint/no-continue': 'off', // Guard statements are good for readability
 		'eslint/no-inline-comments': 'off', // Generally bad but sometimes good
 		'eslint/no-magic-numbers': 'off', // False positives
