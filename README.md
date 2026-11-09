@@ -1,6 +1,7 @@
 # Ringlight NG
 
-Port of https://github.com/twigglits/ringlight for newer GNOME versions with various improvements.
+Port of the [Ringlight](https://github.com/twigglits/ringlight) extension
+for newer GNOME versions with various improvements.
 
 ## Build from source
 
@@ -22,7 +23,8 @@ Feel free to delete the source code after installation.
 
 ## License
 
-This project is licensed under the GPL-3.0 License:
-see the [LICENSE](https://github.com/adil192/ringlight-ng/blob/main/LICENSE) file for details.
+This project is licensed under the GPL-3.0 License
+(see the [LICENSE](https://github.com/adil192/ringlight-ng/blob/main/LICENSE) file for details)
+and was based on the [Ringlight](https://github.com/twigglits/ringlight) extension.
 
 View the full source code on [GitHub](https://github.com/adil192/ringlight-ng).
