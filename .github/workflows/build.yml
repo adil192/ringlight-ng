@@ -1,0 +1,48 @@
+name: Build
+
+on:
+  workflow_dispatch:
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup npm cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
+      - name: Setup tsc cache
+        uses: actions/cache@v6
+        with:
+          path: |
+            dist
+            *.tsbuildinfo
+          key: ${{ runner.os }}-tsc-${{ hashFiles('**/package.json') }}-${{ hashFiles('**/*.ts') }}
+          restore-keys: |
+            ${{ runner.os }}-tsc-
+
+      - name: Build
+        run: make bundle
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          path: ringlight-ng@adilhanney.com.zip
+          if-no-files-found: error
+          archive: false
+
+      - name: Lints
+        run: make lint

@@ -1,0 +1,14 @@
+{
+	"name": "ringlight-ng",
+	"private": true,
+	"type": "module",
+	"sideEffects": false,
+	"main": "src/extension.ts",
+	"devDependencies": {
+		"@girs/gjs": "^4.1.0",
+		"@girs/gnome-shell": "^50.0.4",
+		"oxlint": "^1.91.0",
+		"oxlint-tsgolint": "^7.0.2005",
+		"typescript": "^7.0.2"
+	}
+}

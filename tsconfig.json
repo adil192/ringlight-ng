@@ -1,0 +1,32 @@
+{
+	"version": "1.2.0",
+	"compileOnSave": true,
+	"compilerOptions": {
+		"rootDir": "./src",
+		"outDir": "./dist",
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
+		"target": "ES2023",
+		"lib": [
+			"ES2023"
+		],
+		"strict": true,
+		"forceConsistentCasingInFileNames": true,
+		"skipLibCheck": true,
+		"allowJs": true,
+		"composite": true,
+		"sourceMap": false,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"noUncheckedIndexedAccess": true,
+		"noImplicitOverride": true,
+		"noImplicitAny": true,
+		"noImplicitReturns": true,
+		"noImplicitThis": true
+	},
+	"include": [
+		"src/*.ts",
+		"node_modules/@girs/gnome-shell/dist/index-ambient.d.ts",
+		"node_modules/@girs/gnome-shell/dist/extensions/global.d.ts"
+	]
+}
