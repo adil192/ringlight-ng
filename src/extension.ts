@@ -20,13 +20,17 @@ import { RinglightIndicator } from './indicator.js';
 const RENDER_MAX = 512;
 
 export default class RinglightExtension extends Extension {
-	declare _settings: Gio.Settings;
-	declare _area: St.DrawingArea;
-	declare _indicator: typeof RinglightIndicator.prototype;
-	declare _cameraWatcher: CameraWatcher;
+	declare _settings: Gio.Settings | null;
+	declare _area: St.DrawingArea | null;
+	declare _indicator: typeof RinglightIndicator.prototype | null;
+	declare _cameraWatcher: CameraWatcher | null;
+
+	declare _settingsChangedId: number | null;
+	declare _settingsAutoModeChangedId: number | null;
+	declare _monitorsChangedId: number | null;
 
 	override enable() {
-		this._settings = this.getSettings();
+		const settings = this._settings = this.getSettings();
 
 		this._area = new St.DrawingArea({ reactive: false });
 		this._area.connect('repaint', () => this._repaint());
@@ -37,27 +41,27 @@ export default class RinglightExtension extends Extension {
 			trackFullscreen: false, // a video call in fullscreen still wants light
 		});
 
-		this._indicator = new RinglightIndicator(this._settings, () => this.openPreferences());
+		this._indicator = new RinglightIndicator(settings, () => this.openPreferences());
 		Main.panel.addToStatusArea(this.uuid, this._indicator);
 
 		this._cameraWatcher = new CameraWatcher(active => {
-			if (this._settings.get_boolean('auto-mode')) this._settings.set_boolean('enabled', active);
+			if (settings.get_boolean('auto-mode')) settings.set_boolean('enabled', active);
 		});
-		if (this._settings.get_boolean('auto-mode')) this._cameraWatcher.start();
+		if (settings.get_boolean('auto-mode')) this._cameraWatcher.start();
 
-		this._settingsId = this._settings.connect('changed', () => this._apply());
-		// Switching auto-mode on has to pick up a camera that is already in
-		// use, or the glow waits for the next flip — which on first run means
-		// it looks broken. Switching it off stops the /proc sweeps entirely:
-		// nothing is watching the answer.
-		this._autoId = this._settings.connect('changed::auto-mode', () => {
-			if (this._settings.get_boolean('auto-mode')) {
-				this._cameraWatcher.start();
-				this._settings.set_boolean('enabled', this._cameraWatcher.active);
-			} else {
-				this._cameraWatcher.stop();
+		this._settingsChangedId = settings.connect('changed', () => this._apply());
+
+		this._settingsAutoModeChangedId = settings.connect('changed::auto-mode', () => {
+			if (this._cameraWatcher) {
+				if (settings.get_boolean('auto-mode')) {
+					this._cameraWatcher.start();
+					settings.set_boolean('enabled', this._cameraWatcher.active);
+				} else {
+					this._cameraWatcher.stop();
+				}
 			}
 		});
+
 		this._monitorsId = Main.layoutManager.connect('monitors-changed', () => this._resize());
 
 		this._resize();
