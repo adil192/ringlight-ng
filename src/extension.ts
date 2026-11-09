@@ -1,191 +1,119 @@
-import GObject from 'gi://GObject';
+import Gio from 'gi://Gio';
+import Shell from 'gi://Shell';
 import St from 'gi://St';
 
-import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
-import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
-import {Slider} from 'resource:///org/gnome/shell/ui/slider.js';
+import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 
-import {CameraWatcher} from './camera.js';
-import {drawGlow} from './glow.js';
-
-// The glow is painted onto a surface this many pixels on its long side and the
-// actor is scaled up to fill the monitor. Cairo is a software rasteriser and
-// this runs inside the compositor: a full 2560x1600 repaint measures 67ms, four
-// frame budgets. At 512 it is under a millisecond, and the scale-up costs at
-// most 0.016 of alpha against a full-size render, because every gradient here
-// is far smoother than the pixel grid.
-const RENDER_MAX = 512;
-
-const Indicator = GObject.registerClass(
-class RinglightIndicator extends PanelMenu.Button {
-    // The menu widgets are locals, not fields: the menu owns them and destroys
-    // them with itself, and anything hung off `this` trips EGO-L-002/L-005 for
-    // not being destroyed and nulled a second time in disable().
-    _init(settings, openPrefs) {
-        super._init(0.5, 'Ringlight');
-
-        this.add_child(new St.Icon({
-            icon_name: 'display-brightness-symbolic',
-            style_class: 'system-status-icon',
-        }));
-
-        const onOff = new PopupMenu.PopupSwitchMenuItem(
-            'Ring Light', settings.get_boolean('enabled'));
-        onOff.connect('toggled', (_i, on) => settings.set_boolean('enabled', on));
-        this.menu.addMenuItem(onOff);
-
-        const auto = new PopupMenu.PopupSwitchMenuItem(
-            'Follow camera', settings.get_boolean('auto-mode'));
-        auto.connect('toggled', (_i, on) => settings.set_boolean('auto-mode', on));
-        this.menu.addMenuItem(auto);
-
-        this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-
-        const row = new PopupMenu.PopupBaseMenuItem({activate: false});
-        row.add_child(new St.Icon({
-            icon_name: 'display-brightness-symbolic',
-            style_class: 'popup-menu-icon',
-        }));
-        const slider = new Slider(settings.get_double('brightness'));
-        slider.connect('notify::value',
-            () => settings.set_double('brightness', slider.value));
-        row.add_child(slider);
-        this.menu.addMenuItem(row);
-
-        this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-        const prefs = new PopupMenu.PopupMenuItem('Settings…');
-        prefs.connect('activate', () => openPrefs());
-        this.menu.addMenuItem(prefs);
-
-        // Keep the popup in step with changes made from the prefs window.
-        const changedId = settings.connect('changed', () => {
-            onOff.setToggleState(settings.get_boolean('enabled'));
-            auto.setToggleState(settings.get_boolean('auto-mode'));
-            const brightness = settings.get_double('brightness');
-            if (Math.abs(slider.value - brightness) > 0.001)
-                slider.value = brightness;
-        });
-        this.connect('destroy', () => settings.disconnect(changedId));
-    }
-});
+import { drawGlow, GLOW_FRACTION } from './glow.js';
+import { create_indicator } from './indicator.js';
 
 export default class RinglightExtension extends Extension {
-    enable() {
-        this._settings = this.getSettings();
+	declare _settings: Gio.Settings | null;
+	declare _area: St.DrawingArea | null;
+	declare _indicator: PanelMenu.Button | null;
+	declare _cameraMonitor: Shell.CameraMonitor | null;
 
-        // A layer-shell surface is not an option here: mutter does not
-        // implement zwlr_layer_shell_v1 and a plain toplevel cannot be
-        // click-through, always-on-top and screen-sized under Wayland. Chrome
-        // owned by the shell itself is the only thing that can.
-        this._area = new St.DrawingArea({reactive: false});
-        this._repaintId = this._area.connect('repaint', () => this._repaint());
-        Main.layoutManager.addTopChrome(this._area, {
-            affectsInputRegion: false,
-            affectsStruts: false,
-            trackFullscreen: false, // a video call in fullscreen still wants light
-        });
+	override enable() {
+		const settings = (this._settings = this.getSettings());
 
-        this._indicator = new Indicator(this._settings, () => this.openPreferences());
-        Main.panel.addToStatusArea(this.uuid, this._indicator);
+		this._area = new St.DrawingArea({ reactive: false });
+		this._area.connect('repaint', () => this._onRepaint());
+		Main.layoutManager.addTopChrome(this._area, {
+			trackFullscreen: false, // don't hide when an app is fullscreen
+		});
 
-        this._camera = new CameraWatcher(active => {
-            if (this._settings.get_boolean('auto-mode'))
-                this._settings.set_boolean('enabled', active);
-        });
-        if (this._settings.get_boolean('auto-mode'))
-            this._camera.start();
+		this._indicator = create_indicator(this);
+		Main.panel.addToStatusArea(this.uuid, this._indicator);
 
-        this._settingsId = this._settings.connect('changed', () => this._apply());
-        // Switching auto-mode on has to pick up a camera that is already in
-        // use, or the glow waits for the next flip — which on first run means
-        // it looks broken. Switching it off stops the /proc sweeps entirely:
-        // nothing is watching the answer.
-        this._autoId = this._settings.connect('changed::auto-mode', () => {
-            if (this._settings.get_boolean('auto-mode')) {
-                this._camera.start();
-                this._settings.set_boolean('enabled', this._camera.active);
-            } else {
-                this._camera.stop();
-            }
-        });
-        this._monitorsId = Main.layoutManager.connect('monitors-changed',
-            () => this._resize());
+		this._cameraMonitor = new Shell.CameraMonitor();
+		this._cameraMonitor.connect_object(
+			'notify::cameras-in-use',
+			() => this._updateEnabledForAutoMode(),
+			this,
+		);
 
-        this._resize();
-        this._apply();
-    }
+		Main.layoutManager.connect_object('monitors-changed', () => this._resize(), this);
 
-    disable() {
-        // Signals first: their handlers reach for the camera watcher and the
-        // actor, both of which are about to stop existing.
-        if (this._settingsId)
-            this._settings.disconnect(this._settingsId);
-        if (this._autoId)
-            this._settings.disconnect(this._autoId);
-        this._settingsId = 0;
-        this._autoId = 0;
+		settings.connect_object('changed', () => this._queueRepaint(), this);
+		settings.connect_object('changed::auto-mode', () => this._updateEnabledForAutoMode(), this);
 
-        if (this._monitorsId)
-            Main.layoutManager.disconnect(this._monitorsId);
-        this._monitorsId = 0;
+		this._resize();
+		this._queueRepaint();
+	}
 
-        this._camera?.destroy();
-        this._camera = null;
+	_updateEnabledForAutoMode() {
+		if (!this._settings || !this._cameraMonitor) return;
+		if (!this._settings.get_boolean('auto-mode')) return;
 
-        this._indicator?.destroy();
-        this._indicator = null;
+		const cameras_in_use = this._cameraMonitor.cameras_in_use;
+		this._settings.set_boolean('enabled', cameras_in_use);
+	}
 
-        if (this._area) {
-            this._area.disconnect(this._repaintId);
-            Main.layoutManager.removeChrome(this._area);
-            this._area.destroy();
-            this._area = null;
-        }
+	override disable() {
+		this._cameraMonitor?.disconnect_object(this);
+		this._cameraMonitor = null;
 
-        this._settings = null;
-    }
+		Main.layoutManager.disconnect_object(this);
 
-    // ponytail: primary monitor only. A ring light is for the screen your face
-    // is pointed at; add a per-monitor actor list if someone actually asks.
-    _resize() {
-        const monitor = Main.layoutManager.primaryMonitor;
-        if (!monitor || !this._area)
-            return;
+		this._settings?.disconnect_object(this);
+		this._settings = null;
 
-        // Paint small, let the GPU stretch it. See RENDER_MAX.
-        const k = Math.min(1, RENDER_MAX / Math.max(monitor.width, monitor.height));
-        const w = Math.max(2, Math.round(monitor.width * k));
-        const h = Math.max(2, Math.round(monitor.height * k));
+		this._indicator?.destroy();
+		this._indicator = null;
 
-        this._area.set_position(monitor.x, monitor.y);
-        this._area.set_size(w, h);
-        this._area.set_scale(monitor.width / w, monitor.height / h);
-        this._area.queue_repaint();
-    }
+		if (this._area) {
+			Main.layoutManager.removeChrome(this._area);
+			this._area.destroy();
+			this._area = null;
+		}
+	}
 
-    _apply() {
-        this._area.visible = this._settings.get_boolean('enabled');
-        this._area.queue_repaint();
-    }
+	/**
+	 * Sets {@link _area}'s position and size to match
+	 * {@link Main.layoutManager.primaryMonitor}.
+	 */
+	_resize() {
+		const monitor = Main.layoutManager.primaryMonitor;
+		if (!monitor || !this._area) return;
 
-    // Only ever runs on a settings change, a monitor change, or the first show.
-    // Nothing in the glow follows the pointer or a clock, so there is no
-    // repaint to schedule and no timer to leave running.
-    _repaint() {
-        const cr = this._area.get_context();
-        const [width, height] = this._area.get_surface_size();
-        try {
-            if (width < 1 || height < 1)
-                return;
-            drawGlow(cr, width, height, {
-                brightness: this._settings.get_double('brightness'),
-                colorTemp: this._settings.get_double('color-temp'),
-                glowSize: this._settings.get_string('glow-size'),
-            });
-        } finally {
-            cr.$dispose();
-        }
-    }
+		// Rendering time is O(n^2) in the long dimension,
+		// so render no larger than RENDER_MAX pixels and let the GPU scale it up.
+		const RENDER_MAX = 512;
+		const sf = Math.min(1, RENDER_MAX / Math.max(monitor.width, monitor.height));
+		const w = Math.max(2, Math.round(monitor.width * sf));
+		const h = Math.max(2, Math.round(monitor.height * sf));
+
+		this._area.set_position(monitor.x, monitor.y);
+		this._area.set_size(w, h);
+		this._area.set_scale(monitor.width / w, monitor.height / h);
+		this._area.queue_repaint();
+	}
+
+	_queueRepaint() {
+		if (!this._area || !this._settings) return;
+
+		this._area.visible = this._settings.get_boolean('enabled');
+		this._area.queue_repaint();
+	}
+
+	_onRepaint() {
+		if (!this._area || !this._settings) return;
+
+		const context = this._area.get_context();
+		try {
+			const [width, height] = this._area.get_surface_size();
+			if (width < 1 || height < 1) return;
+
+			drawGlow(context, width, height, {
+				brightness: this._settings.get_double('brightness'),
+				colorTemp: this._settings.get_double('color-temp'),
+				// oxlint-disable-next-line typescript/no-unsafe-type-assertion
+				glowSize: this._settings.get_string('glow-size') as keyof typeof GLOW_FRACTION,
+			});
+		} finally {
+			context.$dispose();
+		}
+	}
 }
