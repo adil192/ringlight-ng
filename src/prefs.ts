@@ -11,6 +11,7 @@ export default class RinglightPreferences extends ExtensionPreferences {
 	override fillPreferencesWindow(window: Adw.PreferencesWindow) {
 		const settings = this.getSettings();
 		const page = new Adw.PreferencesPage();
+		// oxlint-disable-next-line typescript/no-deprecated
 		window.add(page);
 
 		const lightGroup = new Adw.PreferencesGroup({ title: 'Light' });

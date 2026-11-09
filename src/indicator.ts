@@ -29,14 +29,14 @@ export function create_indicator(ext: RinglightExtension) {
 		'Ring Light',
 		settings.get_boolean('enabled'),
 	);
-	enabledToggle.connect('toggled', (_, on) => settings.set_boolean('enabled', on));
+	enabledToggle.connect('toggled', (_, on: boolean) => settings.set_boolean('enabled', on));
 	menu.addMenuItem(enabledToggle);
 
 	const autoModeToggle = new PopupMenu.PopupSwitchMenuItem(
 		'Follow camera',
 		settings.get_boolean('auto-mode'),
 	);
-	autoModeToggle.connect('toggled', (_, on) => settings.set_boolean('auto-mode', on));
+	autoModeToggle.connect('toggled', (_, on: boolean) => settings.set_boolean('auto-mode', on));
 	menu.addMenuItem(autoModeToggle);
 
 	menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
