@@ -1,9 +1,10 @@
-import Gio from 'gi://Gio';
-import St from 'gi://St';
-import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 
-import { CameraWatcher } from './camera.js';
+import Gio from 'gi://Gio';
+import Shell from 'gi://Shell';
+import St from 'gi://St';
+
 import { drawGlow } from './glow.js';
 import { RinglightIndicator } from './indicator.js';
 
@@ -19,11 +20,7 @@ export default class RinglightExtension extends Extension {
 	declare _settings: Gio.Settings | null;
 	declare _area: St.DrawingArea | null;
 	declare _indicator: typeof RinglightIndicator.prototype | null;
-	declare _cameraWatcher: CameraWatcher | null;
-
-	declare _settingsChangedId: number;
-	declare _settingsAutoModeChangedId: number;
-	declare _monitorsChangedId: number;
+	declare _cameraMonitor: Shell.CameraMonitor | null;
 
 	override enable() {
 		const settings = this._settings = this.getSettings();
@@ -40,42 +37,34 @@ export default class RinglightExtension extends Extension {
 		this._indicator = new RinglightIndicator(settings, () => this.openPreferences());
 		Main.panel.addToStatusArea(this.uuid, this._indicator);
 
-		this._cameraWatcher = new CameraWatcher(active => {
-			if (settings.get_boolean('auto-mode')) settings.set_boolean('enabled', active);
-		});
-		if (settings.get_boolean('auto-mode')) this._cameraWatcher.start();
+		this._cameraMonitor = new Shell.CameraMonitor();
+		this._cameraMonitor.connect_object('notify::cameras-in-use', () => this._updateEnabledForAutoMode(), this);
 
-		this._settingsChangedId = settings.connect('changed', () => this._apply());
+		Main.layoutManager.connect_object('monitors-changed', () => this._resize(), this);
 
-		this._settingsAutoModeChangedId = settings.connect('changed::auto-mode', () => {
-			if (this._cameraWatcher) {
-				if (settings.get_boolean('auto-mode')) {
-					this._cameraWatcher.start();
-					settings.set_boolean('enabled', this._cameraWatcher.active);
-				} else {
-					this._cameraWatcher.stop();
-				}
-			}
-		});
-
-		this._monitorsChangedId = Main.layoutManager.connect('monitors-changed', () => this._resize());
+		settings.connect_object('changed', () => this._apply(), this);
+		settings.connect_object('changed::auto-mode', () => this._updateEnabledForAutoMode(), this);
 
 		this._resize();
 		this._apply();
 	}
 
+	_updateEnabledForAutoMode() {
+		if (!this._settings || !this._cameraMonitor) return;
+		if (!this._settings.get_boolean('auto-mode')) return;
+
+		const cameras_in_use = this._cameraMonitor.cameras_in_use;
+		this._settings.set_boolean('enabled', cameras_in_use);
+	}
+
 	disable() {
-		if (this._settingsChangedId) this._settings?.disconnect(this._settingsChangedId);
-		this._settingsChangedId = 0;
+		this._cameraMonitor?.disconnect_object(this);
+		this._cameraMonitor = null;
 
-		if (this._settingsAutoModeChangedId) this._settings?.disconnect(this._settingsAutoModeChangedId);
-		this._settingsAutoModeChangedId = 0;
+		Main.layoutManager.disconnect_object(this);
 
-		if (this._monitorsChangedId) Main.layoutManager.disconnect(this._monitorsChangedId);
-		this._monitorsChangedId = 0;
-
-		this._cameraWatcher?.destroy();
-		this._cameraWatcher = null;
+		this._settings?.disconnect_object(this);
+		this._settings = null;
 
 		this._indicator?.destroy();
 		this._indicator = null;
@@ -85,8 +74,6 @@ export default class RinglightExtension extends Extension {
 			this._area.destroy();
 			this._area = null;
 		}
-
-		this._settings = null;
 	}
 
 	// ponytail: primary monitor only. A ring light is for the screen your face
