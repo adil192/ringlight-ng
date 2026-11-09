@@ -1,11 +1,7 @@
 import Gio from 'gi://Gio';
-import GObject from 'gi://GObject';
 import St from 'gi://St';
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
-import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
-import { Slider } from 'resource:///org/gnome/shell/ui/slider.js';
 
 import { CameraWatcher } from './camera.js';
 import { drawGlow } from './glow.js';
@@ -111,6 +107,8 @@ export default class RinglightExtension extends Extension {
 	}
 
 	_apply() {
+		if (!this._area || !this._settings) return;
+
 		this._area.visible = this._settings.get_boolean('enabled');
 		this._area.queue_repaint();
 	}
@@ -119,6 +117,8 @@ export default class RinglightExtension extends Extension {
 	// Nothing in the glow follows the pointer or a clock, so there is no
 	// repaint to schedule and no timer to leave running.
 	_repaint() {
+		if (!this._area || !this._settings) return;
+
 		const cr = this._area.get_context();
 		const [width, height] = this._area.get_surface_size();
 		try {

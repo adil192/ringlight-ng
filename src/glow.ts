@@ -9,10 +9,10 @@ const PASS_WIDEN = 0.25;
 
 // Fractions of the smaller screen dimension, not pixels: a fixed pixel width
 // is a different fraction of the screen on every display it lands on.
-export const GLOW_FRACTION = { small: 0.06, medium: 0.1, large: 0.16 };
+export const GLOW_FRACTION = { small: 0.06, medium: 0.1, large: 0.16 } as const;
 
 /** Warm amber (255,200,140) at 0.0 to cool white (220,230,255) at 1.0. */
-export function glowColor(temp) {
+export function glowColor(temp: number) {
 	const t = Math.max(0, Math.min(1, temp));
 	return [
 		(255 + (220 - 255) * t) / 255,
@@ -21,7 +21,7 @@ export function glowColor(temp) {
 	];
 }
 
-export function glowWidth(width, height, size) {
+export function glowWidth(width: number, height: number, size: keyof typeof GLOW_FRACTION) {
 	return Math.min(width, height) * (GLOW_FRACTION[size] ?? GLOW_FRACTION.medium);
 }
 
@@ -48,7 +48,7 @@ function drawEdges(cr, width, height, r, g, b, alpha, w) {
  * Nothing here depends on the pointer, or on anything else that changes while
  * the glow is up: this runs once per settings change, never per frame.
  */
-export function drawGlow(cr, width, height, state) {
+export function drawGlow(cr: Cairo.Context, width: number, height: number, state: { brightness: number, colorTemp: number, glowSize: keyof typeof GLOW_FRACTION }) {
 	cr.setOperator(Cairo.Operator.SOURCE);
 	cr.setSourceRGBA(0, 0, 0, 0);
 	cr.paint();
