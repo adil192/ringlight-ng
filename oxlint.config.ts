@@ -26,6 +26,7 @@ export default defineConfig({
 		curly: 'off', // I like single-line if statements
 		'eslint/max-params': 'off', // Meh
 		'eslint/no-continue': 'off', // Guard statements are good for readability
+		'eslint/no-else-return': 'off', // Guard statements aren't always better than else blocks
 		'eslint/no-inline-comments': 'off', // Generally bad but sometimes good
 		'eslint/no-magic-numbers': 'off', // False positives
 		'eslint/no-multi-assign': 'off', // Can make code cleaner to alias a field

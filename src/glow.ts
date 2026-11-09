@@ -1,5 +1,3 @@
-// Glow painting, kept free of any GNOME Shell imports so it can be rendered to
-// a PNG by tools/render-glow.js and checked without a live session.
 import Cairo from 'cairo';
 
 const GLOW_PASSES = 5;
@@ -11,14 +9,32 @@ const PASS_WIDEN = 0.25;
 // is a different fraction of the screen on every display it lands on.
 export const GLOW_FRACTION = { small: 0.06, medium: 0.1, large: 0.16 } as const;
 
-/** Warm amber (255,200,140) at 0.0 to cool white (220,230,255) at 1.0. */
-export function glowColor(temp: number): [number, number, number] {
-	const t = Math.max(0, Math.min(1, temp));
-	return [
-		(255 + (220 - 255) * t) / 255,
-		(200 + (230 - 200) * t) / 255,
-		(140 + (255 - 140) * t) / 255,
-	];
+const WARM_WHITE = [255 / 255, 200 / 255, 140 / 255] as const; // rgb(255, 200, 140)
+const PURE_WHITE = [255 / 255, 255 / 255, 255 / 255] as const; // rgb(255, 255, 255)
+const COOL_WHITE = [220 / 255, 230 / 255, 255 / 255] as const; // rgb(220, 230, 255)
+
+/**
+ * Interpolates between warm white (0.0), pure white (0.5), and cool white (1.0).
+ *
+ * @param t A number between 0 and 1 inclusive.
+ * @returns An RGB triple, each component between 0 and 1.
+ */
+export function glowColor(t: number): [number, number, number] {
+	if (t < 0.5) {
+		t = t * 2;
+		return [
+			WARM_WHITE[0] + (PURE_WHITE[0] - WARM_WHITE[0]) * t,
+			WARM_WHITE[1] + (PURE_WHITE[1] - WARM_WHITE[1]) * t,
+			WARM_WHITE[2] + (PURE_WHITE[2] - WARM_WHITE[2]) * t,
+		];
+	} else {
+		t = (t - 0.5) * 2;
+		return [
+			PURE_WHITE[0] + (COOL_WHITE[0] - PURE_WHITE[0]) * t,
+			PURE_WHITE[1] + (COOL_WHITE[1] - PURE_WHITE[1]) * t,
+			PURE_WHITE[2] + (COOL_WHITE[2] - PURE_WHITE[2]) * t,
+		];
+	}
 }
 
 export function glowWidth(width: number, height: number, size: keyof typeof GLOW_FRACTION) {
