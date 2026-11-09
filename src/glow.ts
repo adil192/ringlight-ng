@@ -1,12 +1,6 @@
 import Cairo from 'cairo';
 
-const GLOW_PASSES = 5;
-const MAX_ALPHA = 0.85;
-// Each pass is this much wider than the last, as a fraction of the base width.
-const PASS_WIDEN = 0.25;
-
-// Fractions of the smaller screen dimension, not pixels: a fixed pixel width
-// is a different fraction of the screen on every display it lands on.
+/** The glow size as a fraction of the screen size. */
 export const GLOW_FRACTION = { small: 0.06, medium: 0.1, large: 0.16 } as const;
 
 const WARM_WHITE = [255 / 255, 200 / 255, 140 / 255] as const; // rgb(255, 200, 140)
@@ -74,10 +68,11 @@ function drawEdges(
 
 /**
  * Paint the glow onto `context`, which is assumed to cover `width` x `height`.
- * `state` is {brightness, colorTemp, glowSize}.
- *
- * Nothing here depends on the pointer, or on anything else that changes while
- * the glow is up: this runs once per settings change, never per frame.
+ * 
+ * @param context The Cairo context to paint onto.
+ * @param width The width of the area to paint.
+ * @param height The height of the area to paint.
+ * @param state The state of the glow { brightness, colorTemp, glowSize }.
  */
 export function drawGlow(
 	context: Cairo.Context,
@@ -95,6 +90,9 @@ export function drawGlow(
 
 	// Overlapping passes: each is wider and dimmer than the last, which stacks
 	// into a falloff far softer than one gradient gives.
+	const GLOW_PASSES = 5;
+	const MAX_ALPHA = 0.85;
+	const PASS_WIDEN = 0.25;
 	for (let pass = 0; pass < GLOW_PASSES; pass++) {
 		const passFactor = 1.0 - (pass / GLOW_PASSES) * 0.5;
 		drawEdges(
