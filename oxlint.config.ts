@@ -7,7 +7,7 @@ export default defineConfig({
 		correctness: 'error',
 		pedantic: 'warn',
 		perf: 'warn',
-		style: 'warn',
+		// style: 'warn',
 		suspicious: 'warn',
 	},
 	ignorePatterns: ['dist/**', 'venv/**'],
