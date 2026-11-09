@@ -47,9 +47,13 @@ export default defineConfig({
 		'typescript/no-confusing-void-expression': 'off', // Forbids void-returning functions in expressions for no reason
 		'typescript/strict-void-return': 'off', // As above
 		'typescript/prefer-readonly-parameter-types': 'off', // Overly verbose
-		'typescript/restrict-template-expressions': ['warn', { // Allow arrays since json.stringify is too verbose
-			allowArray: true,
-		}],
+		'typescript/restrict-template-expressions': [
+			'warn',
+			{
+				// Allow arrays since json.stringify is too verbose
+				allowArray: true,
+			},
+		],
 		'unicorn/consistent-function-scoping': 'off', // Unnecessary aliasing especially if function only used once
 		'unicorn/no-array-sort': 'off', // It's usually preferable to mutate the array in-place rather than creating a new one
 		'unicorn/no-negated-condition': 'off', // Useless

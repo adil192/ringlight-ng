@@ -7,19 +7,27 @@ import { Slider } from 'resource:///org/gnome/shell/ui/slider.js';
 
 export function create_indicator(settings: Gio.Settings, openPreferences: () => void) {
 	const indicator = new PanelMenu.Button(0.5, 'Ringlight');
-	indicator.add_child(new St.Icon({
-		icon_name: 'flashlight-symbolic',
-		style_class: 'system-status-icon',
-	}));
+	indicator.add_child(
+		new St.Icon({
+			icon_name: 'flashlight-symbolic',
+			style_class: 'system-status-icon',
+		}),
+	);
 
 	// oxlint-disable-next-line typescript/no-unsafe-type-assertion (Asserts not a PopupDummyMenu)
 	const menu = indicator.menu as PopupMenu.PopupMenu;
 
-	const enabledToggle = new PopupMenu.PopupSwitchMenuItem('Ring Light', settings.get_boolean('enabled'));
+	const enabledToggle = new PopupMenu.PopupSwitchMenuItem(
+		'Ring Light',
+		settings.get_boolean('enabled'),
+	);
 	enabledToggle.connect('toggled', (_, on) => settings.set_boolean('enabled', on));
 	menu.addMenuItem(enabledToggle);
 
-	const autoModeToggle = new PopupMenu.PopupSwitchMenuItem('Follow camera', settings.get_boolean('auto-mode'));
+	const autoModeToggle = new PopupMenu.PopupSwitchMenuItem(
+		'Follow camera',
+		settings.get_boolean('auto-mode'),
+	);
 	autoModeToggle.connect('toggled', (_, on) => settings.set_boolean('auto-mode', on));
 	menu.addMenuItem(autoModeToggle);
 
@@ -48,4 +56,3 @@ export function create_indicator(settings: Gio.Settings, openPreferences: () => 
 
 	return indicator;
 }
-

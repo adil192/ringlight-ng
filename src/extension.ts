@@ -24,7 +24,7 @@ export default class RinglightExtension extends Extension {
 	declare _cameraMonitor: Shell.CameraMonitor | null;
 
 	override enable() {
-		const settings = this._settings = this.getSettings();
+		const settings = (this._settings = this.getSettings());
 
 		this._area = new St.DrawingArea({ reactive: false });
 		this._area.connect('repaint', () => this._onRepaint());
@@ -39,7 +39,11 @@ export default class RinglightExtension extends Extension {
 		Main.panel.addToStatusArea(this.uuid, this._indicator);
 
 		this._cameraMonitor = new Shell.CameraMonitor();
-		this._cameraMonitor.connect_object('notify::cameras-in-use', () => this._updateEnabledForAutoMode(), this);
+		this._cameraMonitor.connect_object(
+			'notify::cameras-in-use',
+			() => this._updateEnabledForAutoMode(),
+			this,
+		);
 
 		Main.layoutManager.connect_object('monitors-changed', () => this._resize(), this);
 
@@ -108,7 +112,7 @@ export default class RinglightExtension extends Extension {
 		try {
 			const [width, height] = this._area.get_surface_size();
 			if (width < 1 || height < 1) return;
-			
+
 			drawGlow(context, width, height, {
 				brightness: this._settings.get_double('brightness'),
 				colorTemp: this._settings.get_double('color-temp'),

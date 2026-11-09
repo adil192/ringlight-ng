@@ -27,19 +27,20 @@ export default class RinglightPreferences extends ExtensionPreferences {
 		page.add(lightGroup);
 
 		const shapeGroup = new Adw.PreferencesGroup({ title: 'Shape' });
-		shapeGroup.add(choiceRow(
-			'Glow size',
-			'How far the glow reaches in from the edge',
-			['Small', 'Medium', 'Large'],
-			GLOW_SIZES,
-			settings,
-			'glow-size',
-		));
+		shapeGroup.add(
+			choiceRow(
+				'Glow size',
+				'How far the glow reaches in from the edge',
+				['Small', 'Medium', 'Large'],
+				GLOW_SIZES,
+				settings,
+				'glow-size',
+			),
+		);
 		page.add(shapeGroup);
 
 		return Promise.resolve();
 	}
-
 }
 
 function switchRow(title: string, subtitle: string, settings: Gio.Settings, key: string) {
@@ -63,8 +64,16 @@ function scaleRow(title: string, subtitle: string | null, settings: Gio.Settings
 	return row;
 }
 
-function choiceRow(title: string, subtitle: string, labels: string[], values: string[], settings: Gio.Settings, key: string) {
-	if (labels.length !== values.length) throw new Error(`labels and values are incongruent: ${labels} vs ${values}`);
+function choiceRow(
+	title: string,
+	subtitle: string,
+	labels: string[],
+	values: string[],
+	settings: Gio.Settings,
+	key: string,
+) {
+	if (labels.length !== values.length)
+		throw new Error(`labels and values are incongruent: ${labels} vs ${values}`);
 
 	const row = new Adw.ComboRow({
 		title,

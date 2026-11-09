@@ -25,8 +25,23 @@ export function glowWidth(width: number, height: number, size: keyof typeof GLOW
 	return Math.min(width, height) * (GLOW_FRACTION[size] ?? GLOW_FRACTION.medium);
 }
 
-function drawEdges(context: Cairo.Context, width: number, height: number, r: number, g: number, b: number, alpha: number, w: number) {
-	const band = (x0: number, y0: number, x1: number, y1: number, rect: [number, number, number, number]) => {
+function drawEdges(
+	context: Cairo.Context,
+	width: number,
+	height: number,
+	r: number,
+	g: number,
+	b: number,
+	alpha: number,
+	w: number,
+) {
+	const band = (
+		x0: number,
+		y0: number,
+		x1: number,
+		y1: number,
+		rect: [number, number, number, number],
+	) => {
 		const grad = new Cairo.LinearGradient(x0, y0, x1, y1);
 		grad.addColorStopRGBA(0.0, r, g, b, alpha);
 		grad.addColorStopRGBA(1.0, r, g, b, 0.0);
@@ -48,7 +63,12 @@ function drawEdges(context: Cairo.Context, width: number, height: number, r: num
  * Nothing here depends on the pointer, or on anything else that changes while
  * the glow is up: this runs once per settings change, never per frame.
  */
-export function drawGlow(context: Cairo.Context, width: number, height: number, state: { brightness: number, colorTemp: number, glowSize: keyof typeof GLOW_FRACTION }) {
+export function drawGlow(
+	context: Cairo.Context,
+	width: number,
+	height: number,
+	state: { brightness: number; colorTemp: number; glowSize: keyof typeof GLOW_FRACTION },
+) {
 	context.setOperator(Cairo.Operator.SOURCE);
 	context.setSourceRGBA(0, 0, 0, 0);
 	context.paint();
