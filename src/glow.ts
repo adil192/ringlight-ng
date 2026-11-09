@@ -114,7 +114,7 @@ export function drawGlow(
 			r,
 			g,
 			b,
-			state.brightness * (MAX_ALPHA - (MAX_ALPHA - MIN_ALPHA) * (pass / GLOW_PASSES)),
+			state.brightness * (MAX_ALPHA - (MAX_ALPHA - MIN_ALPHA) * (pass / (GLOW_PASSES - 1))),
 			baseGlowWidthPx * (1.0 + pass * PASS_WIDEN),
 		);
 	}
