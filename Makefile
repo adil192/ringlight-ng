@@ -1,9 +1,10 @@
 NAME=ringlight-ng
 DOMAIN=adilhanney.com
+SCHEMA=org.gnome.shell.extensions.ringlight-ng
 
 .PHONY: compile bundle install debug lint clean
 
-compile: dist/extension.js dist/metadata.json dist/stylesheet.css dist/LICENSE dist/README.md
+compile: dist/extension.js dist/metadata.json dist/schemas/$(SCHEMA).gschema.xml dist/LICENSE dist/README.md
 
 bundle: $(NAME)@$(DOMAIN).zip
 $(NAME)@$(DOMAIN).zip: compile
@@ -32,9 +33,9 @@ dist/extension.js: node_modules/.package-lock.json src/*.ts
 dist/metadata.json: metadata.json
 	@mkdir -p dist/
 	@cp metadata.json dist/
-dist/stylesheet.css: stylesheet.css
-	@mkdir -p dist/
-	@cp stylesheet.css dist/
+dist/schemas/$(SCHEMA).gschema.xml: src/schemas/$(SCHEMA).gschema.xml
+	@mkdir -p dist/schemas/
+	@cp src/schemas/$(SCHEMA).gschema.xml dist/schemas/$(SCHEMA).gschema.xml
 dist/LICENSE: LICENSE
 	@mkdir -p dist/
 	@cp LICENSE dist/
