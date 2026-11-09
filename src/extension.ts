@@ -19,58 +19,9 @@ import { drawGlow } from './glow.js';
 // is far smoother than the pixel grid.
 const RENDER_MAX = 512;
 
-const RinglightIndicator = GObject.registerClass(
-	class RinglightIndicator extends PanelMenu.Button {
-		constructor(settings: Gio.Settings, openPrefs) {
-			super(0.5, 'Ringlight');
-
-			this.add_child(new St.Icon({
-				icon_name: 'display-brightness-symbolic',
-				style_class: 'system-status-icon',
-			}));
-
-			const onOff = new PopupMenu.PopupSwitchMenuItem('Ring Light', settings.get_boolean('enabled'));
-			onOff.connect('toggled', (_i, on) => settings.set_boolean('enabled', on));
-			this.menu.addMenuItem(onOff);
-
-			const auto = new PopupMenu.PopupSwitchMenuItem(
-				'Follow camera', settings.get_boolean('auto-mode'));
-			auto.connect('toggled', (_i, on) => settings.set_boolean('auto-mode', on));
-			this.menu.addMenuItem(auto);
-
-			this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-
-			const row = new PopupMenu.PopupBaseMenuItem({ activate: false });
-			row.add_child(new St.Icon({
-				icon_name: 'display-brightness-symbolic',
-				style_class: 'popup-menu-icon',
-			}));
-			const slider = new Slider(settings.get_double('brightness'));
-			slider.connect('notify::value',
-				() => settings.set_double('brightness', slider.value));
-			row.add_child(slider);
-			this.menu.addMenuItem(row);
-
-			this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-			const prefs = new PopupMenu.PopupMenuItem('Settings…');
-			prefs.connect('activate', () => openPrefs());
-			this.menu.addMenuItem(prefs);
-
-			// Keep the popup in step with changes made from the prefs window.
-			const changedId = settings.connect('changed', () => {
-				onOff.setToggleState(settings.get_boolean('enabled'));
-				auto.setToggleState(settings.get_boolean('auto-mode'));
-				const brightness = settings.get_double('brightness');
-				if (Math.abs(slider.value - brightness) > 0.001)
-					slider.value = brightness;
-			});
-			this.connect('destroy', () => settings.disconnect(changedId));
-		}
-	});
-
 export default class RinglightExtension extends Extension {
 	declare _settings: Gio.Settings;
-	enable() {
+	override enable() {
 		this._settings = this.getSettings();
 
 		// A layer-shell surface is not an option here: mutter does not

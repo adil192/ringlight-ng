@@ -44,6 +44,7 @@ export default defineConfig({
 		'one-var': 'off', // Why!
 		'typescript/consistent-return': 'off', // Prefer TypeScript's noImplicitReturns
 		'typescript/no-confusing-void-expression': 'off', // Forbids void-returning functions in expressions for no reason
+		'typescript/strict-void-return': 'off', // As above
 		'typescript/prefer-readonly-parameter-types': 'off', // Overly verbose
 		'unicorn/consistent-function-scoping': 'off', // Unnecessary aliasing especially if function only used once
 		'unicorn/no-array-sort': 'off', // It's usually preferable to mutate the array in-place rather than creating a new one
