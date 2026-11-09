@@ -1,6 +1,7 @@
 import Gio from 'gi://Gio';
 import GObject from 'gi://GObject';
 import St from 'gi://St';
+
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import { Slider } from 'resource:///org/gnome/shell/ui/slider.js';
@@ -9,16 +10,13 @@ export const RinglightIndicator = GObject.registerClass(
 	class RinglightIndicator extends PanelMenu.Button {
 		override _init(settings: Gio.Settings, openPrefs: () => void) {
 			super._init(0.5, 'Ringlight');
+			this.add_child(new St.Icon({
+				icon_name: 'flashlight-symbolic',
+				style_class: 'system-status-icon',
+			}));
 
 			// oxlint-disable-next-line typescript/no-unsafe-type-assertion (Asserts not a PopupDummyMenu)
 			const menu = this.menu as PopupMenu.PopupMenu;
-
-			this.add_child(
-				new St.Icon({
-					icon_name: 'flashlight-symbolic',
-					style_class: 'system-status-icon',
-				}),
-			);
 
 			const enabledToggle = new PopupMenu.PopupSwitchMenuItem(
 				'Ring Light',
@@ -37,12 +35,10 @@ export const RinglightIndicator = GObject.registerClass(
 			menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
 			const row = new PopupMenu.PopupBaseMenuItem({ activate: false });
-			row.add_child(
-				new St.Icon({
-					icon_name: 'flashlight-symbolic',
-					style_class: 'popup-menu-icon',
-				}),
-			);
+			row.add_child(new St.Icon({
+				icon_name: 'flashlight-symbolic',
+				style_class: 'popup-menu-icon',
+			}));
 			const slider = new Slider(settings.get_double('brightness'));
 			slider.connect('notify::value', () => settings.set_double('brightness', slider.value));
 			row.add_child(slider);
