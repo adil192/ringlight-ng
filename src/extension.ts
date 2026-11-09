@@ -5,7 +5,7 @@ import Gio from 'gi://Gio';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
 
-import { drawGlow } from './glow.js';
+import { drawGlow, GLOW_FRACTION } from './glow.js';
 import { RinglightIndicator } from './indicator.js';
 
 // The glow is painted onto a surface this many pixels on its long side and the
@@ -57,7 +57,7 @@ export default class RinglightExtension extends Extension {
 		this._settings.set_boolean('enabled', cameras_in_use);
 	}
 
-	disable() {
+	override disable() {
 		this._cameraMonitor?.disconnect_object(this);
 		this._cameraMonitor = null;
 
@@ -106,17 +106,18 @@ export default class RinglightExtension extends Extension {
 	_repaint() {
 		if (!this._area || !this._settings) return;
 
-		const cr = this._area.get_context();
+		const context = this._area.get_context();
 		const [width, height] = this._area.get_surface_size();
 		try {
 			if (width < 1 || height < 1) return;
-			drawGlow(cr, width, height, {
+			drawGlow(context, width, height, {
 				brightness: this._settings.get_double('brightness'),
 				colorTemp: this._settings.get_double('color-temp'),
-				glowSize: this._settings.get_string('glow-size'),
+				// oxlint-disable-next-line typescript/no-unsafe-type-assertion
+				glowSize: this._settings.get_string('glow-size') as keyof typeof GLOW_FRACTION,
 			});
 		} finally {
-			cr.$dispose();
+			context.$dispose();
 		}
 	}
 }
