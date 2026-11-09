@@ -9,14 +9,6 @@ import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 import { drawGlow, GLOW_FRACTION } from './glow.js';
 import { create_indicator } from './indicator.js';
 
-// The glow is painted onto a surface this many pixels on its long side and the
-// actor is scaled up to fill the monitor. Cairo is a software rasteriser and
-// this runs inside the compositor: a full 2560x1600 repaint measures 67ms, four
-// frame budgets. At 512 it is under a millisecond, and the scale-up costs at
-// most 0.016 of alpha against a full-size render, because every gradient here
-// is far smoother than the pixel grid.
-const RENDER_MAX = 512;
-
 export default class RinglightExtension extends Extension {
 	declare _settings: Gio.Settings | null;
 	declare _area: St.DrawingArea | null;
@@ -78,16 +70,20 @@ export default class RinglightExtension extends Extension {
 		}
 	}
 
-	// ponytail: primary monitor only. A ring light is for the screen your face
-	// is pointed at; add a per-monitor actor list if someone actually asks.
+	/**
+	 * Sets {@link _area}'s position and size to match
+	 * {@link Main.layoutManager.primaryMonitor}.
+	 */
 	_resize() {
 		const monitor = Main.layoutManager.primaryMonitor;
 		if (!monitor || !this._area) return;
 
-		// Paint small, let the GPU stretch it. See RENDER_MAX.
-		const k = Math.min(1, RENDER_MAX / Math.max(monitor.width, monitor.height));
-		const w = Math.max(2, Math.round(monitor.width * k));
-		const h = Math.max(2, Math.round(monitor.height * k));
+		// Rendering time is O(n^2) in the long dimension,
+		// so render no larger than RENDER_MAX pixels and let the GPU scale it up.
+		const RENDER_MAX = 512;
+		const sf = Math.min(1, RENDER_MAX / Math.max(monitor.width, monitor.height));
+		const w = Math.max(2, Math.round(monitor.width * sf));
+		const h = Math.max(2, Math.round(monitor.height * sf));
 
 		this._area.set_position(monitor.x, monitor.y);
 		this._area.set_size(w, h);

@@ -25,6 +25,7 @@ export default defineConfig({
 	rules: {
 		curly: 'off', // I like single-line if statements
 		'eslint/max-params': 'off', // Meh
+		'eslint/max-lines-per-function': ['warn', { max: 100 }], // UI code needs a lot of lines
 		'eslint/no-continue': 'off', // Guard statements are good for readability
 		'eslint/no-else-return': 'off', // Guard statements aren't always better than else blocks
 		'eslint/no-inline-comments': 'off', // Generally bad but sometimes good

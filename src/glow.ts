@@ -35,6 +35,18 @@ export function glowWidth(width: number, height: number, size: keyof typeof GLOW
 	return Math.min(width, height) * (GLOW_FRACTION[size] ?? GLOW_FRACTION.medium);
 }
 
+/**
+ * Draws a glow around the 4 edges of the screen.
+ *
+ * @param context The Cairo context to paint onto.
+ * @param width The width of the area to paint.
+ * @param height The height of the area to paint.
+ * @param r The red component of the glow color, between 0 and 1.
+ * @param g The green component of the glow color, between 0 and 1.
+ * @param b The blue component of the glow color, between 0 and 1.
+ * @param alpha The alpha (opacity) of the glow, between 0 and 1.
+ * @param glowWidth The width/size of the glow band in pixels.
+ */
 function drawEdges(
 	context: Cairo.Context,
 	width: number,
@@ -43,7 +55,7 @@ function drawEdges(
 	g: number,
 	b: number,
 	alpha: number,
-	w: number,
+	glowWidth: number,
 ) {
 	const band = (
 		x0: number,
@@ -60,15 +72,15 @@ function drawEdges(
 		context.fill();
 	};
 
-	band(0, 0, 0, w, [0, 0, width, w]); // top
-	band(0, height, 0, height - w, [0, height - w, width, w]); // bottom
-	band(0, 0, w, 0, [0, 0, w, height]); // left
-	band(width, 0, width - w, 0, [width - w, 0, w, height]); // right
+	band(0, 0, 0, glowWidth, [0, 0, width, glowWidth]); // top
+	band(0, height, 0, height - glowWidth, [0, height - glowWidth, width, glowWidth]); // bottom
+	band(0, 0, glowWidth, 0, [0, 0, glowWidth, height]); // left
+	band(width, 0, width - glowWidth, 0, [width - glowWidth, 0, glowWidth, height]); // right
 }
 
 /**
  * Paint the glow onto `context`, which is assumed to cover `width` x `height`.
- * 
+ *
  * @param context The Cairo context to paint onto.
  * @param width The width of the area to paint.
  * @param height The height of the area to paint.
@@ -86,15 +98,15 @@ export function drawGlow(
 	context.setOperator(Cairo.Operator.OVER);
 
 	const [r, g, b] = glowColor(state.colorTemp);
-	const base = glowWidth(width, height, state.glowSize);
+	const baseGlowWidthPx = glowWidth(width, height, state.glowSize);
 
 	// Overlapping passes: each is wider and dimmer than the last, which stacks
 	// into a falloff far softer than one gradient gives.
 	const GLOW_PASSES = 5;
+	const MIN_ALPHA = 0.5;
 	const MAX_ALPHA = 0.85;
 	const PASS_WIDEN = 0.25;
 	for (let pass = 0; pass < GLOW_PASSES; pass++) {
-		const passFactor = 1.0 - (pass / GLOW_PASSES) * 0.5;
 		drawEdges(
 			context,
 			width,
@@ -102,8 +114,8 @@ export function drawGlow(
 			r,
 			g,
 			b,
-			state.brightness * passFactor * MAX_ALPHA,
-			base * (1.0 + pass * PASS_WIDEN),
+			state.brightness * (MAX_ALPHA - (MAX_ALPHA - MIN_ALPHA) * (pass / GLOW_PASSES)),
+			baseGlowWidthPx * (1.0 + pass * PASS_WIDEN),
 		);
 	}
 }
