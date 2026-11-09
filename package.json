@@ -6,7 +6,7 @@
 	"main": "src/extension.ts",
 	"devDependencies": {
 		"@girs/gjs": "^4.1.0",
-		"@girs/gnome-shell": "^50.0.4",
+		"@girs/gnome-shell": "^51.0.1",
 		"oxfmt": "^0.76.0",
 		"oxlint": "^1.91.0",
 		"oxlint-tsgolint": "^7.0.2005",
