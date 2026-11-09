@@ -9,6 +9,7 @@ import { Slider } from 'resource:///org/gnome/shell/ui/slider.js';
 
 import { CameraWatcher } from './camera.js';
 import { drawGlow } from './glow.js';
+import { RinglightIndicator } from './indicator.js';
 
 // The glow is painted onto a surface this many pixels on its long side and the
 // actor is scaled up to fill the monitor. Cairo is a software rasteriser and
@@ -20,15 +21,16 @@ const RENDER_MAX = 512;
 
 export default class RinglightExtension extends Extension {
 	declare _settings: Gio.Settings;
+	declare _area: St.DrawingArea;
+	declare _indicator: typeof RinglightIndicator.prototype;
+	declare _cameraWatcher: CameraWatcher;
+
 	override enable() {
 		this._settings = this.getSettings();
 
-		// A layer-shell surface is not an option here: mutter does not
-		// implement zwlr_layer_shell_v1 and a plain toplevel cannot be
-		// click-through, always-on-top and screen-sized under Wayland. Chrome
-		// owned by the shell itself is the only thing that can.
 		this._area = new St.DrawingArea({ reactive: false });
-		this._repaintId = this._area.connect('repaint', () => this._repaint());
+		this._area.connect('repaint', () => this._repaint());
+		// TODO: Move to `Main.uiGroup.add_child`?
 		Main.layoutManager.addTopChrome(this._area, {
 			affectsInputRegion: false,
 			affectsStruts: false,
@@ -38,10 +40,10 @@ export default class RinglightExtension extends Extension {
 		this._indicator = new RinglightIndicator(this._settings, () => this.openPreferences());
 		Main.panel.addToStatusArea(this.uuid, this._indicator);
 
-		this._camera = new CameraWatcher(active => {
+		this._cameraWatcher = new CameraWatcher(active => {
 			if (this._settings.get_boolean('auto-mode')) this._settings.set_boolean('enabled', active);
 		});
-		if (this._settings.get_boolean('auto-mode')) this._camera.start();
+		if (this._settings.get_boolean('auto-mode')) this._cameraWatcher.start();
 
 		this._settingsId = this._settings.connect('changed', () => this._apply());
 		// Switching auto-mode on has to pick up a camera that is already in
@@ -50,10 +52,10 @@ export default class RinglightExtension extends Extension {
 		// nothing is watching the answer.
 		this._autoId = this._settings.connect('changed::auto-mode', () => {
 			if (this._settings.get_boolean('auto-mode')) {
-				this._camera.start();
-				this._settings.set_boolean('enabled', this._camera.active);
+				this._cameraWatcher.start();
+				this._settings.set_boolean('enabled', this._cameraWatcher.active);
 			} else {
-				this._camera.stop();
+				this._cameraWatcher.stop();
 			}
 		});
 		this._monitorsId = Main.layoutManager.connect('monitors-changed', () => this._resize());
@@ -73,8 +75,8 @@ export default class RinglightExtension extends Extension {
 		if (this._monitorsId) Main.layoutManager.disconnect(this._monitorsId);
 		this._monitorsId = 0;
 
-		this._camera?.destroy();
-		this._camera = null;
+		this._cameraWatcher?.destroy();
+		this._cameraWatcher = null;
 
 		this._indicator?.destroy();
 		this._indicator = null;

@@ -73,7 +73,7 @@ export class CameraWatcher {
 	 * `devicesFn` is the seam check-camera.js uses to drive a full sweep on a
 	 * machine with no webcam plugged in; leave it out in the extension.
 	 */
-	constructor(onChange, devicesFn = videoDevices) {
+	constructor(onChange: (active: boolean) => void, devicesFn = videoDevices) {
 		this._onChange = onChange;
 		this._devicesFn = devicesFn;
 		this._active = false;

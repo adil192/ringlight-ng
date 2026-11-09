@@ -7,8 +7,8 @@ import { Slider } from 'resource:///org/gnome/shell/ui/slider.js';
 
 export const RinglightIndicator = GObject.registerClass(
 	class RinglightIndicator extends PanelMenu.Button {
-		constructor(settings: Gio.Settings, openPrefs: () => void) {
-			super(0.5, 'Ringlight');
+		override _init(settings: Gio.Settings, openPrefs: () => void) {
+			super._init(0.5, 'Ringlight');
 
 			// oxlint-disable-next-line typescript/no-unsafe-type-assertion (Asserts not a PopupDummyMenu)
 			const menu = this.menu as PopupMenu.PopupMenu;
