@@ -28,11 +28,8 @@ export default class RinglightExtension extends Extension {
 
 		this._area = new St.DrawingArea({ reactive: false });
 		this._area.connect('repaint', () => this._onRepaint());
-		// TODO: Move to `Main.uiGroup.add_child`? https://gitlab.gnome.org/GNOME/gnome-shell/-/commit/e62d22a50ed8aa25de988fb3c389b999e42f2eac
 		Main.layoutManager.addTopChrome(this._area, {
-			affectsInputRegion: false,
-			affectsStruts: false,
-			trackFullscreen: false, // a video call in fullscreen still wants light
+			trackFullscreen: false, // don't hide when an app is fullscreen
 		});
 
 		this._indicator = create_indicator(settings, () => this.openPreferences());
