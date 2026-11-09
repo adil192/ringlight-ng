@@ -1,12 +1,13 @@
-import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
-
 import Gio from 'gi://Gio';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
 
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
+import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
+
 import { drawGlow, GLOW_FRACTION } from './glow.js';
-import { RinglightIndicator } from './indicator.js';
+import { create_indicator } from './indicator.js';
 
 // The glow is painted onto a surface this many pixels on its long side and the
 // actor is scaled up to fill the monitor. Cairo is a software rasteriser and
@@ -19,7 +20,7 @@ const RENDER_MAX = 512;
 export default class RinglightExtension extends Extension {
 	declare _settings: Gio.Settings | null;
 	declare _area: St.DrawingArea | null;
-	declare _indicator: typeof RinglightIndicator.prototype | null;
+	declare _indicator: PanelMenu.Button | null;
 	declare _cameraMonitor: Shell.CameraMonitor | null;
 
 	override enable() {
@@ -34,7 +35,7 @@ export default class RinglightExtension extends Extension {
 			trackFullscreen: false, // a video call in fullscreen still wants light
 		});
 
-		this._indicator = new RinglightIndicator(settings, () => this.openPreferences());
+		this._indicator = create_indicator(settings, () => this.openPreferences());
 		Main.panel.addToStatusArea(this.uuid, this._indicator);
 
 		this._cameraMonitor = new Shell.CameraMonitor();
