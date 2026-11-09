@@ -27,7 +27,7 @@ export default class RinglightExtension extends Extension {
 		const settings = this._settings = this.getSettings();
 
 		this._area = new St.DrawingArea({ reactive: false });
-		this._area.connect('repaint', () => this._repaint());
+		this._area.connect('repaint', () => this._onRepaint());
 		// TODO: Move to `Main.uiGroup.add_child`? https://gitlab.gnome.org/GNOME/gnome-shell/-/commit/e62d22a50ed8aa25de988fb3c389b999e42f2eac
 		Main.layoutManager.addTopChrome(this._area, {
 			affectsInputRegion: false,
@@ -43,11 +43,11 @@ export default class RinglightExtension extends Extension {
 
 		Main.layoutManager.connect_object('monitors-changed', () => this._resize(), this);
 
-		settings.connect_object('changed', () => this._apply(), this);
+		settings.connect_object('changed', () => this._queueRepaint(), this);
 		settings.connect_object('changed::auto-mode', () => this._updateEnabledForAutoMode(), this);
 
 		this._resize();
-		this._apply();
+		this._queueRepaint();
 	}
 
 	_updateEnabledForAutoMode() {
@@ -94,23 +94,21 @@ export default class RinglightExtension extends Extension {
 		this._area.queue_repaint();
 	}
 
-	_apply() {
+	_queueRepaint() {
 		if (!this._area || !this._settings) return;
 
 		this._area.visible = this._settings.get_boolean('enabled');
 		this._area.queue_repaint();
 	}
 
-	// Only ever runs on a settings change, a monitor change, or the first show.
-	// Nothing in the glow follows the pointer or a clock, so there is no
-	// repaint to schedule and no timer to leave running.
-	_repaint() {
+	_onRepaint() {
 		if (!this._area || !this._settings) return;
 
 		const context = this._area.get_context();
-		const [width, height] = this._area.get_surface_size();
 		try {
+			const [width, height] = this._area.get_surface_size();
 			if (width < 1 || height < 1) return;
+			
 			drawGlow(context, width, height, {
 				brightness: this._settings.get_double('brightness'),
 				colorTemp: this._settings.get_double('color-temp'),

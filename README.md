@@ -1,6 +1,6 @@
 # Ringlight NG
 
-Port of https://github.com/twigglits/ringlight for modern GNOME versions.
+Port of https://github.com/twigglits/ringlight for newer GNOME versions with various improvements.
 
 ## Build from source
 
