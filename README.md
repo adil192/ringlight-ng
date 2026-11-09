@@ -1,6 +1,6 @@
 # Ringlight NG
 
-Reimplementation of https://github.com/twigglits/ringlight for modern GNOME versions.
+Port of https://github.com/twigglits/ringlight for modern GNOME versions.
 
 ## Build from source
 

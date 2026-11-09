@@ -25,16 +25,16 @@ export default class RinglightExtension extends Extension {
 	declare _indicator: typeof RinglightIndicator.prototype | null;
 	declare _cameraWatcher: CameraWatcher | null;
 
-	declare _settingsChangedId: number | null;
-	declare _settingsAutoModeChangedId: number | null;
-	declare _monitorsChangedId: number | null;
+	declare _settingsChangedId: number;
+	declare _settingsAutoModeChangedId: number;
+	declare _monitorsChangedId: number;
 
 	override enable() {
 		const settings = this._settings = this.getSettings();
 
 		this._area = new St.DrawingArea({ reactive: false });
 		this._area.connect('repaint', () => this._repaint());
-		// TODO: Move to `Main.uiGroup.add_child`?
+		// TODO: Move to `Main.uiGroup.add_child`? https://gitlab.gnome.org/GNOME/gnome-shell/-/commit/e62d22a50ed8aa25de988fb3c389b999e42f2eac
 		Main.layoutManager.addTopChrome(this._area, {
 			affectsInputRegion: false,
 			affectsStruts: false,
@@ -62,22 +62,21 @@ export default class RinglightExtension extends Extension {
 			}
 		});
 
-		this._monitorsId = Main.layoutManager.connect('monitors-changed', () => this._resize());
+		this._monitorsChangedId = Main.layoutManager.connect('monitors-changed', () => this._resize());
 
 		this._resize();
 		this._apply();
 	}
 
 	disable() {
-		// Signals first: their handlers reach for the camera watcher and the
-		// actor, both of which are about to stop existing.
-		if (this._settingsId) this._settings.disconnect(this._settingsId);
-		if (this._autoId) this._settings.disconnect(this._autoId);
-		this._settingsId = 0;
-		this._autoId = 0;
+		if (this._settingsChangedId) this._settings?.disconnect(this._settingsChangedId);
+		this._settingsChangedId = 0;
 
-		if (this._monitorsId) Main.layoutManager.disconnect(this._monitorsId);
-		this._monitorsId = 0;
+		if (this._settingsAutoModeChangedId) this._settings?.disconnect(this._settingsAutoModeChangedId);
+		this._settingsAutoModeChangedId = 0;
+
+		if (this._monitorsChangedId) Main.layoutManager.disconnect(this._monitorsChangedId);
+		this._monitorsChangedId = 0;
 
 		this._cameraWatcher?.destroy();
 		this._cameraWatcher = null;
@@ -86,7 +85,6 @@ export default class RinglightExtension extends Extension {
 		this._indicator = null;
 
 		if (this._area) {
-			this._area.disconnect(this._repaintId);
 			Main.layoutManager.removeChrome(this._area);
 			this._area.destroy();
 			this._area = null;
