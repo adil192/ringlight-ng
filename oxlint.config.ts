@@ -19,14 +19,17 @@ export default defineConfig({
 			files: ['src/**'],
 			rules: {
 				'sort-keys': 'off', // 'width' should come before 'height'
-			}
-		}
+			},
+		},
 	],
 	rules: {
 		curly: 'off', // I like single-line if statements
-		'eslint/max-params': ['warn', {
-			max: 4, // increased from 3
-		}],
+		'eslint/max-params': [
+			'warn',
+			{
+				max: 4, // increased from 3
+			},
+		],
 		'eslint/no-continue': 'off', // Guard statements are good for readability
 		'eslint/no-inline-comments': 'off', // Generally bad but sometimes good
 		'eslint/no-magic-numbers': 'off', // False positives
@@ -35,10 +38,13 @@ export default defineConfig({
 		'eslint/no-redeclare': 'off', // interface merging used a lot in gjs
 		'eslint/no-ternary': 'off', // I like ternaries
 		'eslint/no-underscore-dangle': 'off', // gnome-shell uses lots of underscore-prefixed names
-		'eslint/sort-imports': ['warn', {
-			allowSeparatedGroups: true,
-			ignoreCase: true,
-		}],
+		'eslint/sort-imports': [
+			'warn',
+			{
+				allowSeparatedGroups: true,
+				ignoreCase: true,
+			},
+		],
 		'id-length': 'off', // Single letter variables are usually bad but I only use them when it's intuitive, like x and y coordinates.
 		'no-shadow': 'off', // Typically done on purpose
 		'one-var': 'off', // Why!
@@ -53,5 +59,5 @@ export default defineConfig({
 		'unicorn/no-unreadable-array-destructuring': 'off', // The alternative is much more verbose
 		'unicorn/prefer-global-this': 'off', // globalThis != global in GJS
 		'unicorn/prefer-ternary': 'off', // If statements are sometimes more readable.
-	}
+	},
 });

@@ -1,7 +1,6 @@
 import Gio from 'gi://Gio';
 import GObject from 'gi://GObject';
 import St from 'gi://St';
-
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
@@ -40,11 +39,9 @@ export default class RinglightExtension extends Extension {
 		Main.panel.addToStatusArea(this.uuid, this._indicator);
 
 		this._camera = new CameraWatcher(active => {
-			if (this._settings.get_boolean('auto-mode'))
-				this._settings.set_boolean('enabled', active);
+			if (this._settings.get_boolean('auto-mode')) this._settings.set_boolean('enabled', active);
 		});
-		if (this._settings.get_boolean('auto-mode'))
-			this._camera.start();
+		if (this._settings.get_boolean('auto-mode')) this._camera.start();
 
 		this._settingsId = this._settings.connect('changed', () => this._apply());
 		// Switching auto-mode on has to pick up a camera that is already in
@@ -59,8 +56,7 @@ export default class RinglightExtension extends Extension {
 				this._camera.stop();
 			}
 		});
-		this._monitorsId = Main.layoutManager.connect('monitors-changed',
-			() => this._resize());
+		this._monitorsId = Main.layoutManager.connect('monitors-changed', () => this._resize());
 
 		this._resize();
 		this._apply();
@@ -69,15 +65,12 @@ export default class RinglightExtension extends Extension {
 	disable() {
 		// Signals first: their handlers reach for the camera watcher and the
 		// actor, both of which are about to stop existing.
-		if (this._settingsId)
-			this._settings.disconnect(this._settingsId);
-		if (this._autoId)
-			this._settings.disconnect(this._autoId);
+		if (this._settingsId) this._settings.disconnect(this._settingsId);
+		if (this._autoId) this._settings.disconnect(this._autoId);
 		this._settingsId = 0;
 		this._autoId = 0;
 
-		if (this._monitorsId)
-			Main.layoutManager.disconnect(this._monitorsId);
+		if (this._monitorsId) Main.layoutManager.disconnect(this._monitorsId);
 		this._monitorsId = 0;
 
 		this._camera?.destroy();
@@ -100,8 +93,7 @@ export default class RinglightExtension extends Extension {
 	// is pointed at; add a per-monitor actor list if someone actually asks.
 	_resize() {
 		const monitor = Main.layoutManager.primaryMonitor;
-		if (!monitor || !this._area)
-			return;
+		if (!monitor || !this._area) return;
 
 		// Paint small, let the GPU stretch it. See RENDER_MAX.
 		const k = Math.min(1, RENDER_MAX / Math.max(monitor.width, monitor.height));
@@ -126,8 +118,7 @@ export default class RinglightExtension extends Extension {
 		const cr = this._area.get_context();
 		const [width, height] = this._area.get_surface_size();
 		try {
-			if (width < 1 || height < 1)
-				return;
+			if (width < 1 || height < 1) return;
 			drawGlow(cr, width, height, {
 				brightness: this._settings.get_double('brightness'),
 				colorTemp: this._settings.get_double('color-temp'),

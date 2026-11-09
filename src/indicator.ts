@@ -1,7 +1,6 @@
 import Gio from 'gi://Gio';
 import GObject from 'gi://GObject';
 import St from 'gi://St';
-
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import { Slider } from 'resource:///org/gnome/shell/ui/slider.js';
@@ -14,26 +13,36 @@ export const RinglightIndicator = GObject.registerClass(
 			// oxlint-disable-next-line typescript/no-unsafe-type-assertion (Asserts not a PopupDummyMenu)
 			const menu = this.menu as PopupMenu.PopupMenu;
 
-			this.add_child(new St.Icon({
-				icon_name: 'flashlight-symbolic',
-				style_class: 'system-status-icon',
-			}));
+			this.add_child(
+				new St.Icon({
+					icon_name: 'flashlight-symbolic',
+					style_class: 'system-status-icon',
+				}),
+			);
 
-			const enabledToggle = new PopupMenu.PopupSwitchMenuItem('Ring Light', settings.get_boolean('enabled'));
+			const enabledToggle = new PopupMenu.PopupSwitchMenuItem(
+				'Ring Light',
+				settings.get_boolean('enabled'),
+			);
 			enabledToggle.connect('toggled', (_, on) => settings.set_boolean('enabled', on));
 			menu.addMenuItem(enabledToggle);
 
-			const autoModeToggle = new PopupMenu.PopupSwitchMenuItem('Follow camera', settings.get_boolean('auto-mode'));
+			const autoModeToggle = new PopupMenu.PopupSwitchMenuItem(
+				'Follow camera',
+				settings.get_boolean('auto-mode'),
+			);
 			autoModeToggle.connect('toggled', (_, on) => settings.set_boolean('auto-mode', on));
 			menu.addMenuItem(autoModeToggle);
 
 			menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
 			const row = new PopupMenu.PopupBaseMenuItem({ activate: false });
-			row.add_child(new St.Icon({
-				icon_name: 'flashlight-symbolic',
-				style_class: 'popup-menu-icon',
-			}));
+			row.add_child(
+				new St.Icon({
+					icon_name: 'flashlight-symbolic',
+					style_class: 'popup-menu-icon',
+				}),
+			);
 			const slider = new Slider(settings.get_double('brightness'));
 			slider.connect('notify::value', () => settings.set_double('brightness', slider.value));
 			row.add_child(slider);
@@ -49,10 +58,9 @@ export const RinglightIndicator = GObject.registerClass(
 				enabledToggle.setToggleState(settings.get_boolean('enabled'));
 				autoModeToggle.setToggleState(settings.get_boolean('auto-mode'));
 				const brightness = settings.get_double('brightness');
-				if (Math.abs(slider.value - brightness) > 0.001)
-					slider.value = brightness;
+				if (Math.abs(slider.value - brightness) > 0.001) slider.value = brightness;
 			});
 			this.connect('destroy', () => settings.disconnect(changedId));
 		}
-	}
+	},
 );
