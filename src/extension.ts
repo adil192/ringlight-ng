@@ -24,7 +24,7 @@ export default class RinglightExtension extends Extension {
 			trackFullscreen: false, // don't hide when an app is fullscreen
 		});
 
-		this._indicator = create_indicator(settings, () => this.openPreferences());
+		this._indicator = create_indicator(this);
 		Main.panel.addToStatusArea(this.uuid, this._indicator);
 
 		this._cameraMonitor = new Shell.CameraMonitor();

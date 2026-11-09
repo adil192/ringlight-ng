@@ -1,15 +1,23 @@
 import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
 import St from 'gi://St';
 
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import { Slider } from 'resource:///org/gnome/shell/ui/slider.js';
 
-export function create_indicator(settings: Gio.Settings, openPreferences: () => void) {
+import type RinglightExtension from './extension.js';
+
+export function create_indicator(ext: RinglightExtension) {
+	const settings = ext._settings!;
+	const ringlight_gicon = Gio.icon_new_for_string(
+		GLib.build_filenamev([ext.path, 'icons', 'ringlight-symbolic.svg']),
+	);
+
 	const indicator = new PanelMenu.Button(0.5, 'Ringlight');
 	indicator.add_child(
 		new St.Icon({
-			icon_name: 'flashlight-symbolic',
+			gicon: ringlight_gicon,
 			style_class: 'system-status-icon',
 		}),
 	);
@@ -34,7 +42,10 @@ export function create_indicator(settings: Gio.Settings, openPreferences: () => 
 	menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
 	const row = new PopupMenu.PopupBaseMenuItem({ activate: false });
-	row.add_child(new St.Icon({ icon_name: 'flashlight-symbolic', style_class: 'popup-menu-icon' }));
+	row.add_child(new St.Icon({
+		gicon: ringlight_gicon,
+		style_class: 'popup-menu-icon'
+	}));
 	const slider = new Slider(settings.get_double('brightness'));
 	slider.connect('notify::value', () => settings.set_double('brightness', slider.value));
 	row.add_child(slider);
@@ -42,7 +53,7 @@ export function create_indicator(settings: Gio.Settings, openPreferences: () => 
 
 	menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 	const prefs = new PopupMenu.PopupMenuItem('Settings…');
-	prefs.connect('activate', () => openPreferences());
+	prefs.connect('activate', () => ext.openPreferences());
 	menu.addMenuItem(prefs);
 
 	// Keep the popup in step with changes made from the prefs window.
