@@ -1,7 +1,13 @@
-# Ringlight NG
+# Ringlight NG <img src="src/icons/ringlight-symbolic.svg" width=24 height=24>
 
-Port of the [Ringlight](https://github.com/twigglits/ringlight) extension
-for newer GNOME versions with various improvements.
+An extension for GNOME that illuminates the edges of your screen when using your webcam,
+similar to macOS®'s [Edge Light](https://support.apple.com/en-us/125934) feature.
+
+This is based on the code of the original [Ringlight](https://github.com/twigglits/ringlight) extension but:
+- updated for the latest version of GNOME.
+- with fewer lines of code.
+- ported to Typescript for type-safety and reliability.
+- uses GNOME's own `CameraMonitor` class instead of a custom process polling method. This is more efficient, but it may miss apps that bypass PipeWire.
 
 ## Build from source
 
@@ -28,3 +34,5 @@ This project is licensed under the GPL-3.0 License
 and was based on the [Ringlight](https://github.com/twigglits/ringlight) extension.
 
 View the full source code on [GitHub](https://github.com/adil192/ringlight-ng).
+
+This project is not affiliated with or endorsed by Apple, macOS, or the original Ringlight extension. macOS is a trademark of Apple Inc., registered in the U.S. and other countries and regions.
