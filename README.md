@@ -4,6 +4,7 @@ An extension for GNOME that illuminates the edges of your screen when using your
 similar to macOS®'s [Edge Light](https://support.apple.com/en-us/125934) feature.
 
 This is based on the code of the original [Ringlight](https://github.com/twigglits/ringlight) extension but:
+
 - updated for the latest version of GNOME.
 - with fewer lines of code.
 - ported to Typescript for type-safety and reliability.

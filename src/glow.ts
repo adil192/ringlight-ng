@@ -8,6 +8,15 @@ const PURE_WHITE = [255 / 255, 255 / 255, 255 / 255] as const; // rgb(255, 255, 
 const COOL_WHITE = [220 / 255, 230 / 255, 255 / 255] as const; // rgb(220, 230, 255)
 
 /**
+ * Rendering time is O(n^2) in the long dimension,
+ * so render no larger than RENDER_MAX pixels and let the GPU scale it up.
+ *
+ * For a 1080p screen, this is 1/4 resolution (for 1/16 of the work).
+ */
+export const RENDER_MAX = 512;
+const CURSOR_MASK_RADIUS = 200;
+
+/**
  * Interpolates between warm white (0.0), pure white (0.5), and cool white (1.0).
  *
  * @param t A number between 0 and 1 inclusive.
@@ -78,24 +87,45 @@ function drawEdges(
 	band(width, 0, width - glowWidth, 0, [width - glowWidth, 0, glowWidth, height]); // right
 }
 
+function drawCursorMask(context: Cairo.Context, x: number, y: number) {
+	const gradient = new Cairo.RadialGradient(x, y, 0, x, y, CURSOR_MASK_RADIUS);
+	const easeOut = (t: number) => {
+		return (1 - t) * (1 - t);
+	};
+	for (let x = 0; x <= 8; ++x) {
+		const t = x / 8;
+		const alpha = easeOut(t);
+		gradient.addColorStopRGBA(t, 0, 0, 0, alpha);
+	}
+
+	context.setOperator(Cairo.Operator.DEST_OUT);
+	context.setSource(gradient);
+	context.arc(x, y, CURSOR_MASK_RADIUS, 0, 2 * Math.PI);
+	context.fill();
+	context.setOperator(Cairo.Operator.OVER);
+}
+
 /**
  * Paint the glow onto `context`, which is assumed to cover `width` x `height`.
  *
  * @param context The Cairo context to paint onto.
  * @param width The width of the area to paint.
  * @param height The height of the area to paint.
+ * @param pointer_x The current mouse X position as a fraction of the screen width, or null if unknown.
+ * @param pointer_y The current mouse Y position as a fraction of the screen height, or null if unknown.
  * @param state The state of the glow { brightness, colorTemp, glowSize }.
  */
 export function drawGlow(
 	context: Cairo.Context,
 	width: number,
 	height: number,
+	pointer_x: number | null,
+	pointer_y: number | null,
 	state: { brightness: number; colorTemp: number; glowSize: keyof typeof GLOW_FRACTION },
 ) {
 	context.setOperator(Cairo.Operator.SOURCE);
 	context.setSourceRGBA(0, 0, 0, 0);
 	context.paint();
-	context.setOperator(Cairo.Operator.OVER);
 
 	const [r, g, b] = glowColor(state.colorTemp);
 	const baseGlowWidthPx = glowWidth(width, height, state.glowSize);
@@ -106,6 +136,7 @@ export function drawGlow(
 	const MIN_ALPHA = 0.5;
 	const MAX_ALPHA = 0.85;
 	const PASS_WIDEN = 0.25;
+	context.setOperator(Cairo.Operator.OVER);
 	for (let pass = 0; pass < GLOW_PASSES; pass++) {
 		drawEdges(
 			context,
@@ -117,5 +148,16 @@ export function drawGlow(
 			state.brightness * (MAX_ALPHA - (MAX_ALPHA - MIN_ALPHA) * (pass / (GLOW_PASSES - 1))),
 			baseGlowWidthPx * (1.0 + pass * PASS_WIDEN),
 		);
+	}
+
+	if (
+		pointer_x !== null
+		&& pointer_x >= 0
+		&& pointer_x <= 1
+		&& pointer_y !== null
+		&& pointer_y >= 0
+		&& pointer_y <= 1
+	) {
+		drawCursorMask(context, pointer_x * width, pointer_y * height);
 	}
 }

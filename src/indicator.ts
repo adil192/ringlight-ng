@@ -42,10 +42,12 @@ export function create_indicator(ext: RinglightExtension) {
 	menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
 	const row = new PopupMenu.PopupBaseMenuItem({ activate: false });
-	row.add_child(new St.Icon({
-		gicon: ringlight_gicon,
-		style_class: 'popup-menu-icon'
-	}));
+	row.add_child(
+		new St.Icon({
+			gicon: ringlight_gicon,
+			style_class: 'popup-menu-icon',
+		}),
+	);
 	const slider = new Slider(settings.get_double('brightness'));
 	slider.connect('notify::value', () => settings.set_double('brightness', slider.value));
 	row.add_child(slider);
