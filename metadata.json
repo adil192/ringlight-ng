@@ -2,8 +2,8 @@
 	"name": "Ringlight NG",
 	"uuid": "ringlight-ng@adilhanney.com",
 	"settings-schema": "org.gnome.shell.extensions.ringlight-ng",
-	"version-name": "1.0.0",
-	"version": 2,
+	"version-name": "1.0.1",
+	"version": 3,
 	"description": "Puts a soft, warm glow around the edges of your screen so your face is lit during video calls. Turns itself on whenever an app opens the webcam. Brightness, colour and size are in the panel menu and the extension settings.",
 	"url": "https://github.com/adil192/ringlight-ng",
 	"donations": {
