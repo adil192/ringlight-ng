@@ -1,7 +1,7 @@
 import Cairo from 'cairo';
 
 /** The glow size as a fraction of the screen size. */
-export const GLOW_FRACTION = { small: 0.06, medium: 0.1, large: 0.16 } as const;
+export const GLOW_FRACTION = { small: 1 / 16, medium: 2 / 16, large: 3 / 16 } as const;
 
 const WARM_WHITE = [255 / 255, 200 / 255, 140 / 255] as const; // rgb(255, 200, 140)
 const PURE_WHITE = [255 / 255, 255 / 255, 255 / 255] as const; // rgb(255, 255, 255)
@@ -11,9 +11,9 @@ const COOL_WHITE = [220 / 255, 230 / 255, 255 / 255] as const; // rgb(220, 230, 
  * Rendering time is O(n^2) in the long dimension,
  * so render no larger than RENDER_MAX pixels and let the GPU scale it up.
  *
- * For a 1080p screen, this is 1/4 resolution (for 1/16 of the work).
+ * For a 1080p screen, this is 1/2 resolution for 1/4 of the work.
  */
-export const RENDER_MAX = 512;
+export const RENDER_MAX = 1024;
 const CURSOR_MASK_RADIUS = 200;
 
 /**
@@ -44,6 +44,11 @@ export function glowWidth(width: number, height: number, size: keyof typeof GLOW
 	return Math.min(width, height) * (GLOW_FRACTION[size] ?? GLOW_FRACTION.medium);
 }
 
+/** Easing function from https://easings.net/#easeInOutQuad */
+function easeInOutQuad(x: number): number {
+	return x < 0.5 ? 2 * x * x : 1 - Math.pow(2 - 2 * x, 2) / 2;
+}
+
 /**
  * Draws a glow around the 4 edges of the screen.
  *
@@ -66,35 +71,54 @@ function drawEdges(
 	alpha: number,
 	glowWidth: number,
 ) {
-	const band = (
-		x0: number,
-		y0: number,
-		x1: number,
-		y1: number,
-		rect: [number, number, number, number],
-	) => {
-		const grad = new Cairo.LinearGradient(x0, y0, x1, y1);
-		grad.addColorStopRGBA(0.0, r, g, b, alpha);
-		grad.addColorStopRGBA(1.0, r, g, b, 0.0);
-		context.setSource(grad);
-		context.rectangle(...rect);
-		context.fill();
+	context.setOperator(Cairo.Operator.OVER);
+	// Create a path with two rounded rectangles such that the band in between is filled.
+	const appendRoundedRectangle = (x: number, y: number, w: number, h: number, radius: number) => {
+		const r = Math.min(radius, w / 2, h / 2);
+		context.moveTo(x + r, y);
+		context.lineTo(x + w - r, y);
+		context.arc(x + w - r, y + r, r, -Math.PI / 2, 0);
+		context.lineTo(x + w, y + h - r);
+		context.arc(x + w - r, y + h - r, r, 0, Math.PI / 2);
+		context.lineTo(x + r, y + h);
+		context.arc(x + r, y + h - r, r, Math.PI / 2, Math.PI);
+		context.lineTo(x, y + r);
+		context.arc(x + r, y + r, r, Math.PI, (3 * Math.PI) / 2);
+		context.closePath();
 	};
 
-	band(0, 0, 0, glowWidth, [0, 0, width, glowWidth]); // top
-	band(0, height, 0, height - glowWidth, [0, height - glowWidth, width, glowWidth]); // bottom
-	band(0, 0, glowWidth, 0, [0, 0, glowWidth, height]); // left
-	band(width, 0, width - glowWidth, 0, [width - glowWidth, 0, glowWidth, height]); // right
+	const outerMargin = 1;
+	const innerRadius = glowWidth / 2;
+
+	context.newPath();
+	// outer rrect
+	appendRoundedRectangle(
+		outerMargin,
+		outerMargin,
+		width - 2 * outerMargin,
+		height - 2 * outerMargin,
+		innerRadius + glowWidth,
+	);
+	// inner rrect
+	appendRoundedRectangle(
+		glowWidth,
+		glowWidth,
+		width - 2 * glowWidth,
+		height - 2 * glowWidth,
+		innerRadius,
+	);
+	context.setFillRule(Cairo.FillRule.EVEN_ODD);
+	context.setSourceRGBA(r, g, b, alpha);
+	context.fill();
+	context.setFillRule(Cairo.FillRule.WINDING);
 }
 
+/** Cuts out a circular hole around the cursor position. */
 function drawCursorMask(context: Cairo.Context, x: number, y: number) {
 	const gradient = new Cairo.RadialGradient(x, y, 0, x, y, CURSOR_MASK_RADIUS);
-	const easeOut = (t: number) => {
-		return (1 - t) * (1 - t);
-	};
 	for (let x = 0; x <= 8; ++x) {
 		const t = x / 8;
-		const alpha = easeOut(t);
+		const alpha = 1 - easeInOutQuad(t);
 		gradient.addColorStopRGBA(t, 0, 0, 0, alpha);
 	}
 
@@ -128,27 +152,10 @@ export function drawGlow(
 	context.paint();
 
 	const [r, g, b] = glowColor(state.colorTemp);
-	const baseGlowWidthPx = glowWidth(width, height, state.glowSize);
+	const glowWidthPx = glowWidth(width, height, state.glowSize);
 
-	// Overlapping passes: each is wider and dimmer than the last, which stacks
-	// into a falloff far softer than one gradient gives.
-	const GLOW_PASSES = 5;
-	const MIN_ALPHA = 0.5;
-	const MAX_ALPHA = 0.85;
-	const PASS_WIDEN = 0.25;
 	context.setOperator(Cairo.Operator.OVER);
-	for (let pass = 0; pass < GLOW_PASSES; pass++) {
-		drawEdges(
-			context,
-			width,
-			height,
-			r,
-			g,
-			b,
-			state.brightness * (MAX_ALPHA - (MAX_ALPHA - MIN_ALPHA) * (pass / (GLOW_PASSES - 1))),
-			baseGlowWidthPx * (1.0 + pass * PASS_WIDEN),
-		);
-	}
+	drawEdges(context, width, height, r, g, b, state.brightness, glowWidthPx);
 
 	if (
 		pointer_x !== null
