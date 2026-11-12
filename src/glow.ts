@@ -25,6 +25,7 @@ const CURSOR_MASK_RADIUS = 200;
 export function glowColor(t: number): [number, number, number] {
 	if (t < 0.5) {
 		t = t * 2;
+		t = 1 - (1 - t) * (1 - t); // bias towards pure white
 		return [
 			WARM_WHITE[0] + (PURE_WHITE[0] - WARM_WHITE[0]) * t,
 			WARM_WHITE[1] + (PURE_WHITE[1] - WARM_WHITE[1]) * t,
@@ -32,6 +33,7 @@ export function glowColor(t: number): [number, number, number] {
 		];
 	} else {
 		t = (t - 0.5) * 2;
+		t = t * t; // bias towards pure white
 		return [
 			PURE_WHITE[0] + (COOL_WHITE[0] - PURE_WHITE[0]) * t,
 			PURE_WHITE[1] + (COOL_WHITE[1] - PURE_WHITE[1]) * t,
