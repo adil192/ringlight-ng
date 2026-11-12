@@ -42,16 +42,20 @@ export default class RinglightExtension extends Extension {
 		settings.connect_object('changed::auto-mode', () => this._updateEnabledForAutoMode(), this);
 
 		const cursorTracker = global.backend.get_cursor_tracker();
-		cursorTracker.connect_object('position-invalidated', () => {
-			this._updateCursor(cursorTracker);
-		}, this);
-		cursorTracker.connect_object('visibility-changed', () => {
-			this._updateCursor(cursorTracker);
-		}, this);
-		this._updateCursor(cursorTracker);
+		cursorTracker.connect_object(
+			'position-invalidated',
+			() => this._updateCursor(cursorTracker),
+			this,
+		);
+		cursorTracker.connect_object(
+			'visibility-changed',
+			() => this._updateCursor(cursorTracker),
+			this,
+		);
 
+		this._updateEnabledForAutoMode();
 		this._resize();
-		this._queueRepaint();
+		this._updateCursor(cursorTracker);
 	}
 
 	_updateCursor(cursorTracker: Meta.CursorTracker) {
@@ -113,6 +117,7 @@ export default class RinglightExtension extends Extension {
 		this._area.queue_repaint();
 	}
 
+	/** Updates _area.visible and queues a repaint */
 	_queueRepaint() {
 		if (!this._area || !this._settings) return;
 
@@ -120,6 +125,7 @@ export default class RinglightExtension extends Extension {
 		this._area.queue_repaint();
 	}
 
+	/** Paints the ringlight. Call _queueRepaint instead of using this method directly.  */
 	_onRepaint() {
 		if (!this._area || !this._settings) return;
 
