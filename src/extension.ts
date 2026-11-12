@@ -42,9 +42,17 @@ export default class RinglightExtension extends Extension {
 		settings.connect_object('changed', () => this._queueRepaint(), this);
 		settings.connect_object('changed::auto-mode', () => this._updateEnabledForAutoMode(), this);
 
+		{
+			const [x, y] = global.get_pointer();
+			this._pointer = { x, y };
+		}
 		this._motionController = new Clutter.MotionController();
 		this._motionController.connect('motion', (_, sprite) => {
 			this._pointer = sprite.get_coords();
+			if (this._area && this._area.visible) this._queueRepaint();
+		});
+		this._motionController.connect('leave', () => {
+			delete this._pointer;
 			if (this._area && this._area.visible) this._queueRepaint();
 		});
 		global.stage.add_action(this._motionController);
@@ -64,6 +72,7 @@ export default class RinglightExtension extends Extension {
 	override disable() {
 		if (this._motionController) global.stage.remove_action(this._motionController);
 		delete this._motionController;
+		delete this._pointer;
 
 		this._cameraMonitor?.disconnect_object(this);
 		delete this._cameraMonitor;
