@@ -52,7 +52,7 @@ export default class RinglightExtension extends Extension {
 			if (this._area && this._area.visible) this._queueRepaint();
 		});
 		this._motionController.connect('leave', () => {
-			delete this._pointer;
+			this._pointer = undefined;
 			if (this._area && this._area.visible) this._queueRepaint();
 		});
 		global.stage.add_action(this._motionController);
@@ -71,25 +71,25 @@ export default class RinglightExtension extends Extension {
 
 	override disable() {
 		if (this._motionController) global.stage.remove_action(this._motionController);
-		delete this._motionController;
-		delete this._pointer;
+		this._motionController = undefined;
+		this._pointer = undefined;
 
 		this._cameraMonitor?.disconnect_object(this);
-		delete this._cameraMonitor;
+		this._cameraMonitor = undefined;
 
 		Main.layoutManager.disconnect_object(this);
 
 		this._settings?.disconnect_object(this);
-		delete this._settings;
+		this._settings = undefined;
 
 		this._indicator?.destroy();
-		delete this._indicator;
+		this._indicator = undefined;
 
 		if (this._area) {
 			Main.layoutManager.removeChrome(this._area);
 			this._area.destroy();
-			delete this._area;
 		}
+		this._area = undefined;
 	}
 
 	/**
