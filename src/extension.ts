@@ -1,5 +1,5 @@
-import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
+import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
 
@@ -15,8 +15,7 @@ export default class RinglightExtension extends Extension {
 	declare _area?: St.DrawingArea;
 	declare _indicator?: PanelMenu.Button;
 	declare _cameraMonitor?: Shell.CameraMonitor;
-	declare _motionController?: Clutter.MotionController;
-	declare _pointer?: { x: number; y: number };
+	declare _pointer?: { x: number; y: number } | null;
 
 	override enable() {
 		const settings = (this._settings = this.getSettings());
@@ -42,25 +41,27 @@ export default class RinglightExtension extends Extension {
 		settings.connect_object('changed', () => this._queueRepaint(), this);
 		settings.connect_object('changed::auto-mode', () => this._updateEnabledForAutoMode(), this);
 
-		{
-			const [x, y] = global.get_pointer();
-			this._pointer = { x, y };
-		}
-		this._motionController = new Clutter.MotionController();
-		this._motionController.connect('motion', (_, sprite) => {
-			this._pointer = sprite.get_coords();
-			if (this._area && this._area.visible) this._queueRepaint();
-		});
-		this._motionController.connect('leave', () => {
-			this._pointer = undefined;
-			if (this._area && this._area.visible) this._queueRepaint();
-		});
-		global.stage.add_action(this._motionController);
+		const cursorTracker = global.backend.get_cursor_tracker();
+		cursorTracker.connect_object('position-invalidated', () => {
+			this._updateCursor(cursorTracker);
+		}, this);
+		cursorTracker.connect_object('visibility-changed', () => {
+			this._updateCursor(cursorTracker);
+		}, this);
+		this._updateCursor(cursorTracker);
 
 		this._resize();
 		this._queueRepaint();
 	}
 
+	_updateCursor(cursorTracker: Meta.CursorTracker) {
+		if (cursorTracker.get_pointer_visible()) {
+			[this._pointer] = cursorTracker.get_pointer();
+		} else {
+			this._pointer = undefined;
+		}
+		if (this._area && this._area.visible) this._queueRepaint();
+	}
 	_updateEnabledForAutoMode() {
 		if (!this._settings || !this._cameraMonitor) return;
 		if (!this._settings.get_boolean('auto-mode')) return;
@@ -70,8 +71,8 @@ export default class RinglightExtension extends Extension {
 	}
 
 	override disable() {
-		if (this._motionController) global.stage.remove_action(this._motionController);
-		this._motionController = undefined;
+		const cursorTracker = global.backend.get_cursor_tracker();
+		cursorTracker.disconnect_object(this);
 		this._pointer = undefined;
 
 		this._cameraMonitor?.disconnect_object(this);
