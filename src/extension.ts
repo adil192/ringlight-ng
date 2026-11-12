@@ -11,12 +11,12 @@ import { drawGlow, GLOW_FRACTION, RENDER_MAX } from './glow.js';
 import { create_indicator } from './indicator.js';
 
 export default class RinglightExtension extends Extension {
-	declare _settings: Gio.Settings | null;
-	declare _area: St.DrawingArea | null;
-	declare _indicator: PanelMenu.Button | null;
-	declare _cameraMonitor: Shell.CameraMonitor | null;
-	declare _motionController: Clutter.MotionController | null;
-	declare _pointer: { x: number; y: number } | null;
+	declare _settings?: Gio.Settings;
+	declare _area?: St.DrawingArea;
+	declare _indicator?: PanelMenu.Button;
+	declare _cameraMonitor?: Shell.CameraMonitor;
+	declare _motionController?: Clutter.MotionController;
+	declare _pointer?: { x: number; y: number };
 
 	override enable() {
 		const settings = (this._settings = this.getSettings());
@@ -63,23 +63,23 @@ export default class RinglightExtension extends Extension {
 
 	override disable() {
 		if (this._motionController) global.stage.remove_action(this._motionController);
-		this._motionController = null;
+		delete this._motionController;
 
 		this._cameraMonitor?.disconnect_object(this);
-		this._cameraMonitor = null;
+		delete this._cameraMonitor;
 
 		Main.layoutManager.disconnect_object(this);
 
 		this._settings?.disconnect_object(this);
-		this._settings = null;
+		delete this._settings;
 
 		this._indicator?.destroy();
-		this._indicator = null;
+		delete this._indicator;
 
 		if (this._area) {
 			Main.layoutManager.removeChrome(this._area);
 			this._area.destroy();
-			this._area = null;
+			delete this._area;
 		}
 	}
 
