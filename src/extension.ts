@@ -70,6 +70,7 @@ export default class RinglightExtension extends Extension {
 		);
 
 		this._updateEnabledForAutoMode();
+		if (this._settings.get_boolean('enabled')) this._area.visible = true;
 		this._resize();
 		this._updateCursor(cursorTracker);
 	}
