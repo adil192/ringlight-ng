@@ -1,3 +1,4 @@
+import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
@@ -121,7 +122,9 @@ export default class RinglightExtension extends Extension {
 	_queueRepaint() {
 		if (!this._area || !this._settings) return;
 
-		this._area.visible = this._settings.get_boolean('enabled');
+		const enabled = this._settings.get_boolean('enabled');
+		_fadeInOrOut(this._area, enabled);
+
 		this._area.queue_repaint();
 	}
 
@@ -149,5 +152,29 @@ export default class RinglightExtension extends Extension {
 		} finally {
 			context.$dispose();
 		}
+	}
+}
+
+function _fadeInOrOut(area: St.DrawingArea, enabled: boolean) {
+	if (enabled) {
+		if (area.visible && area.opacity >= 255) return;
+		area.visible = true;
+		area.ease({
+			opacity: 255,
+			duration: 500 * (1 - area.opacity / 255),
+			mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+		});
+	} else {
+		if (!area.visible) return;
+		if (area.opacity <= 0) {
+			area.visible = false;
+			return;
+		}
+		area.ease({
+			opacity: 0,
+			duration: 500 * (area.opacity / 255),
+			mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+			onComplete: () => (area.visible = false),
+		});
 	}
 }
