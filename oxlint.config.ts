@@ -29,6 +29,7 @@ export default defineConfig({
 		'eslint/no-continue': 'off', // Guard statements are good for readability
 		'eslint/no-else-return': 'off', // Guard statements aren't always better than else blocks
 		'eslint/no-inline-comments': 'off', // Generally bad but sometimes good
+		'eslint/no-lonely-if': 'off', // Makes nested conditions more readable and symmetric
 		'eslint/no-magic-numbers': 'off', // False positives
 		'eslint/no-multi-assign': 'off', // Can make code cleaner to alias a field
 		'eslint/no-negated-condition': 'off', // Useless

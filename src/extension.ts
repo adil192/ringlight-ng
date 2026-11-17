@@ -1,3 +1,4 @@
+import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
@@ -13,6 +14,7 @@ import { create_indicator } from './indicator.js';
 export default class RinglightExtension extends Extension {
 	declare _settings?: Gio.Settings;
 	declare _area?: St.DrawingArea;
+	private _fadeTransition?: Clutter.PropertyTransition;
 	declare _indicator?: PanelMenu.Button;
 	declare _cameraMonitor?: Shell.CameraMonitor;
 	declare _pointer?: { x: number; y: number } | null;
@@ -20,11 +22,25 @@ export default class RinglightExtension extends Extension {
 	override enable() {
 		const settings = (this._settings = this.getSettings());
 
-		this._area = new St.DrawingArea({ reactive: false });
+		this._area = new St.DrawingArea({ reactive: false, opacity: 0, visible: false });
 		this._area.connect('repaint', () => this._onRepaint());
 		Main.layoutManager.addTopChrome(this._area, {
 			trackFullscreen: false, // don't hide when an app is fullscreen
 		});
+
+		this._fadeTransition = Clutter.PropertyTransition.new_for_actor(this._area, 'opacity');
+		this._fadeTransition.set_from(0);
+		this._fadeTransition.set_to(255);
+		this._fadeTransition.set_duration(1000);
+		this._fadeTransition.set_progress_mode(Clutter.AnimationMode.EASE_IN_OUT_QUAD);
+		this._fadeTransition.stop();
+		this._fadeTransition.add_marker_at_time('transparent', 0);
+		this._fadeTransition.connect('marker-reached::transparent', transition => {
+			if (transition.direction === Clutter.TimelineDirection.BACKWARD) {
+				this._area!.visible = false;
+			}
+		});
+		this._area.add_transition('fadeTransition', this._fadeTransition);
 
 		this._indicator = create_indicator(this);
 		Main.panel.addToStatusArea(this.uuid, this._indicator);
@@ -54,6 +70,7 @@ export default class RinglightExtension extends Extension {
 		);
 
 		this._updateEnabledForAutoMode();
+		if (this._settings.get_boolean('enabled')) this._area.visible = true;
 		this._resize();
 		this._updateCursor(cursorTracker);
 	}
@@ -92,8 +109,10 @@ export default class RinglightExtension extends Extension {
 
 		if (this._area) {
 			Main.layoutManager.removeChrome(this._area);
+			this._area.remove_all_transitions();
 			this._area.destroy();
 		}
+		this._fadeTransition = undefined;
 		this._area = undefined;
 	}
 
@@ -117,11 +136,26 @@ export default class RinglightExtension extends Extension {
 		this._area.queue_repaint();
 	}
 
-	/** Updates _area.visible and queues a repaint */
+	/** Fades the actor in/out if needed and queues a repaint */
 	_queueRepaint() {
-		if (!this._area || !this._settings) return;
+		if (!this._area || !this._settings || !this._fadeTransition) return;
 
-		this._area.visible = this._settings.get_boolean('enabled');
+		const enabled = this._settings.get_boolean('enabled');
+		if (enabled) {
+			if (!this._area.visible || this._area.opacity < 255) {
+				const wasVisible = this._area.visible;
+				this._area.visible = true;
+				this._fadeTransition.set_direction(Clutter.TimelineDirection.FORWARD);
+				if (!wasVisible) this._fadeTransition.rewind();
+				this._fadeTransition.start();
+			}
+		} else {
+			if (this._area.visible) {
+				this._fadeTransition.set_direction(Clutter.TimelineDirection.BACKWARD);
+				this._fadeTransition.start();
+			}
+		}
+
 		this._area.queue_repaint();
 	}
 
