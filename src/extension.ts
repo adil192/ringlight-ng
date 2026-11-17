@@ -21,7 +21,7 @@ export default class RinglightExtension extends Extension {
 	override enable() {
 		const settings = (this._settings = this.getSettings());
 
-		this._area = new St.DrawingArea({ reactive: false });
+		this._area = new St.DrawingArea({ reactive: false, opacity: 0 });
 		this._area.connect('repaint', () => this._onRepaint());
 		Main.layoutManager.addTopChrome(this._area, {
 			trackFullscreen: false, // don't hide when an app is fullscreen
